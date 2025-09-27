@@ -6,3 +6,16 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.catalog-item {
+    padding-left: 20px;
+    border-left: 1px solid black ;
+}
+
+.ac-hold {
+    display: none;
+}
+
+.ac-item-name:hover {
+    cursor: text;
+}
