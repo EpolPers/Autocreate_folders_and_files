@@ -85,7 +85,7 @@ export default class Autocreate extends Plugin {
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			//console.log('click', evt);
+			console.log('click', evt);
 		});
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
@@ -254,12 +254,17 @@ class MainSettingTab extends PluginSettingTab {
 								cls: 'ac-item-name'
 							});
 
-							// Обработчик кнопки Button Rename Item
+							// Добавляем обработчик событий Rename Item
 							containerItemNameEl.addEventListener('click', () => {
+								
 								containerItemNameEl.classList.add('ac-hold');
+
+
 								let inputNewNameItemEl = containerItemInfoEl.createEl('input', {
 									placeholder: 'New name'
 								});
+
+
 								let buttonSubmitRenameItemEl = containerItemInfoEl.createEl('button', {
 									text: 'Ok',
 								});
@@ -284,6 +289,8 @@ class MainSettingTab extends PluginSettingTab {
 
 							}, { once: true });
 
+							// Удаляем обработчик событий Button Rename Item
+							//containerItemNameEl
 
 							
 							// Создается контейнер блока управления в родительском контейнере 
@@ -295,24 +302,24 @@ class MainSettingTab extends PluginSettingTab {
 							// Если это папка то создается кнопка добавления файлов как орган управления
 							if (value.itemType == 'folder') {
 
-								let buttonAddChildFile = itemControlContainerEl.createEl('button', {
+								let buttonAddChildFileEl = itemControlContainerEl.createEl('button', {
 									text: 'Add File'
 								});
-								let buttonAddChildFolder = itemControlContainerEl.createEl('button', {
+								let buttonAddChildFolderEl = itemControlContainerEl.createEl('button', {
 									text: 'Add Folder'
 								});
 								
 								// Обработка кнопки Add Child Folder
 
-								buttonAddChildFolder.addEventListener('click', () => {
-									createItem(itemContainerEl).then(answer => {
+								buttonAddChildFolderEl.addEventListener('click', () => {
+									_NEW_createItem(itemContainerEl).then(answer => {
 										
 										value.itemChilds.push({
 											itemType: 'folder',
 											itemName: answer,
 											itemChilds: [] 
 										});
-										plugin.saveSettings();
+										//plugin.saveSettings();
 
 										deleteCatalogContainer(containerCatalog);
 										uploadCatalogContainer(undefined, catalog, containerCatalog);
@@ -320,9 +327,13 @@ class MainSettingTab extends PluginSettingTab {
 									});
 								}, { once: true });
 
+								// Test
+
+
+								let i = 0;
 
 								// Обработка кнопки Add Child File
-								buttonAddChildFile.addEventListener('click', () => {
+								buttonAddChildFileEl.addEventListener('click', () => {
 									createItem(itemContainerEl).then(answer => {
 									
 										value.itemChilds.push({
@@ -430,7 +441,79 @@ class MainSettingTab extends PluginSettingTab {
 				};
 
 				return await promise;
+		} 
+
+
+		function _NEW_createItem(containerParentItemEl: HTMLDivElement) {
+			createContainer (containerParentItemEl);
 		}
+
+
+		/**
+		 * Эта новая улучшенная версия формы по созданию новых элементов и реадктирования существующих
+		 * @param containerParentItemEl 
+		 * @returns 
+		 */
+
+		async function _NEED_EDIT_createItem(containerParentItemEl: HTMLDivElement) {
+				let inputGhostItemValue = '';
+				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
+
+				// Создаем промис, который будет ожидать ввода
+				const promise = new Promise((resolve) => {
+					resolvePromise = resolve;
+				});
+
+				// Создаем DOM новой формы
+				let containerGhostItemEl = containerParentItemEl.createEl('div', {
+					cls: 'ghost-item-container'
+				})
+
+				let formGhostItemEl = containerGhostItemEl.createEl('form', {
+					cls: 'ac-form-ghost-item',
+					attr: {
+						name: 'acFormGhostItem'
+					}
+				});
+				let inputFormGhostItemEl = formGhostItemEl.createEl('input', {
+					type: 'text',
+					attr: {
+						pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]',
+						required: 'true'
+					}
+				});
+				inputFormGhostItemEl.focus();
+
+				let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
+					text: 'Add',
+					type: 'submit'
+				});
+
+
+
+				/*
+				let containerGhostItemEl = parentItemContainerEl.createEl('div', {
+					cls: 'ghost-item-container'
+				});
+
+				let inputGhostItemEl = containerGhostItemEl.createEl('input', {
+					type: 'text'
+				});
+				inputGhostItemEl.focus();
+
+
+				let buttonGhostItemEl = containerGhostItemEl.createEl('button', {
+					text: 'Submit'
+				});*/
+
+				/*buttonGhostItemEl.onclick = () => {
+					inputGhostItemValue = inputGhostItemEl.value;
+					resolvePromise(inputGhostItemValue); // Разрешаем промис при клике
+				};*/
+
+				return await promise;
+		}
+
 
 			uploadCatalogContainer(undefined, catalog, containerCatalog);
 
