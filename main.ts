@@ -85,7 +85,7 @@ export default class Autocreate extends Plugin {
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			//console.log('click', evt);
+			console.log('click', evt);
 		});
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
@@ -254,12 +254,17 @@ class MainSettingTab extends PluginSettingTab {
 								cls: 'ac-item-name'
 							});
 
-							// Обработчик кнопки Button Rename Item
+							// Добавляем обработчик событий Rename Item
 							containerItemNameEl.addEventListener('click', () => {
+								
 								containerItemNameEl.classList.add('ac-hold');
+
+
 								let inputNewNameItemEl = containerItemInfoEl.createEl('input', {
 									placeholder: 'New name'
 								});
+
+
 								let buttonSubmitRenameItemEl = containerItemInfoEl.createEl('button', {
 									text: 'Ok',
 								});
@@ -284,6 +289,8 @@ class MainSettingTab extends PluginSettingTab {
 
 							}, { once: true });
 
+							// Удаляем обработчик событий Button Rename Item
+							//containerItemNameEl
 
 							
 							// Создается контейнер блока управления в родительском контейнере 
@@ -295,17 +302,17 @@ class MainSettingTab extends PluginSettingTab {
 							// Если это папка то создается кнопка добавления файлов как орган управления
 							if (value.itemType == 'folder') {
 
-								let buttonAddChildFile = itemControlContainerEl.createEl('button', {
+								let buttonAddChildFileEl = itemControlContainerEl.createEl('button', {
 									text: 'Add File'
 								});
-								let buttonAddChildFolder = itemControlContainerEl.createEl('button', {
+								let buttonAddChildFolderEl = itemControlContainerEl.createEl('button', {
 									text: 'Add Folder'
 								});
 								
 								// Обработка кнопки Add Child Folder
 
-								buttonAddChildFolder.addEventListener('click', () => {
-									createItem(itemContainerEl).then(answer => {
+								buttonAddChildFolderEl.addEventListener('click', () => {
+									createGhostItem(itemContainerEl).then(answer => {
 										
 										value.itemChilds.push({
 											itemType: 'folder',
@@ -320,10 +327,14 @@ class MainSettingTab extends PluginSettingTab {
 									});
 								}, { once: true });
 
+								// Test
+
+
+								let i = 0;
 
 								// Обработка кнопки Add Child File
-								buttonAddChildFile.addEventListener('click', () => {
-									createItem(itemContainerEl).then(answer => {
+								buttonAddChildFileEl.addEventListener('click', () => {
+									createGhostItem(itemContainerEl).then(answer => {
 									
 										value.itemChilds.push({
 											itemType: 'file',
@@ -401,7 +412,14 @@ class MainSettingTab extends PluginSettingTab {
 				return await variable;
 			}
 
-			async function createItem(parentItemContainerEl: HTMLDivElement) {
+
+		/**
+		 * Создает призрачный контейнер будующего Item с полями для ввода данных
+		 * @param containerParentItemEl 
+		 * @returns promise
+		 */
+
+		async function createGhostItem(containerParentItemEl: HTMLDivElement) {
 				let inputGhostItemValue = '';
 				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
 
@@ -410,27 +428,47 @@ class MainSettingTab extends PluginSettingTab {
 					resolvePromise = resolve;
 				});
 
-				let containerGhostItemEl = parentItemContainerEl.createEl('div', {
-					cls: 'ghost-item-container'
+				// Создаем DOM новой формы
+				let containerGhostItemEl = containerParentItemEl.createEl('div', {
+					cls: 'ac-ghost-item-container'
+				})
+
+				let formGhostItemEl = containerGhostItemEl.createEl('form', {
+					cls: 'ac-form-ghost-item',
+					attr: {
+						name: 'acFormGhostItem'
+					}
 				});
-
-				let inputGhostItemEl = containerGhostItemEl.createEl('input', {
-					type: 'text'
+				let inputFormGhostItemEl = formGhostItemEl.createEl('input', {
+					type: 'text',
+					attr: {
+						pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]|[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}',
+						required: 'true'
+					}
 				});
-				inputGhostItemEl.focus();
+				inputFormGhostItemEl.focus();
 
-
-				let buttonGhostItemEl = containerGhostItemEl.createEl('button', {
-					text: 'Submit'
+				let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
+					text: 'Add',
 				});
+				buttonSubmitFormGhostItemEl.type = 'submit';
 
-				buttonGhostItemEl.onclick = () => {
-					inputGhostItemValue = inputGhostItemEl.value;
-					resolvePromise(inputGhostItemValue); // Разрешаем промис при клике
-				};
+
+				/**
+				 * Перехватывает событие по отправки формы
+				 * @param event Событие, которое необходимо прервать
+				 */
+				function handleFormSubmit (event: { preventDefault: () => void; }) {
+					event.preventDefault();
+					inputGhostItemValue = inputFormGhostItemEl.value;
+					resolvePromise(inputGhostItemValue);
+				}
+
+				formGhostItemEl.addEventListener('submit', handleFormSubmit);
 
 				return await promise;
 		}
+
 
 			uploadCatalogContainer(undefined, catalog, containerCatalog);
 
