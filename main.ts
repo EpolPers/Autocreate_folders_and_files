@@ -312,14 +312,14 @@ class MainSettingTab extends PluginSettingTab {
 								// Обработка кнопки Add Child Folder
 
 								buttonAddChildFolderEl.addEventListener('click', () => {
-									_NEW_createItem(itemContainerEl).then(answer => {
+									createGhostItem(itemContainerEl).then(answer => {
 										
 										value.itemChilds.push({
 											itemType: 'folder',
 											itemName: answer,
 											itemChilds: [] 
 										});
-										//plugin.saveSettings();
+										plugin.saveSettings();
 
 										deleteCatalogContainer(containerCatalog);
 										uploadCatalogContainer(undefined, catalog, containerCatalog);
@@ -334,7 +334,7 @@ class MainSettingTab extends PluginSettingTab {
 
 								// Обработка кнопки Add Child File
 								buttonAddChildFileEl.addEventListener('click', () => {
-									createItem(itemContainerEl).then(answer => {
+									createGhostItem(itemContainerEl).then(answer => {
 									
 										value.itemChilds.push({
 											itemType: 'file',
@@ -412,50 +412,14 @@ class MainSettingTab extends PluginSettingTab {
 				return await variable;
 			}
 
-			async function createItem(parentItemContainerEl: HTMLDivElement) {
-				let inputGhostItemValue = '';
-				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
-
-				// Создаем промис, который будет ожидать ввода
-				const promise = new Promise((resolve) => {
-					resolvePromise = resolve;
-				});
-
-				let containerGhostItemEl = parentItemContainerEl.createEl('div', {
-					cls: 'ghost-item-container'
-				});
-
-				let inputGhostItemEl = containerGhostItemEl.createEl('input', {
-					type: 'text'
-				});
-				inputGhostItemEl.focus();
-
-
-				let buttonGhostItemEl = containerGhostItemEl.createEl('button', {
-					text: 'Submit'
-				});
-
-				buttonGhostItemEl.onclick = () => {
-					inputGhostItemValue = inputGhostItemEl.value;
-					resolvePromise(inputGhostItemValue); // Разрешаем промис при клике
-				};
-
-				return await promise;
-		} 
-
-
-		function _NEW_createItem(containerParentItemEl: HTMLDivElement) {
-			createContainer (containerParentItemEl);
-		}
-
 
 		/**
-		 * Эта новая улучшенная версия формы по созданию новых элементов и реадктирования существующих
+		 * Создает призрачный контейнер будующего Item с полями для ввода данных
 		 * @param containerParentItemEl 
-		 * @returns 
+		 * @returns promise
 		 */
 
-		async function _NEED_EDIT_createItem(containerParentItemEl: HTMLDivElement) {
+		async function createGhostItem(containerParentItemEl: HTMLDivElement) {
 				let inputGhostItemValue = '';
 				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
 
@@ -466,7 +430,7 @@ class MainSettingTab extends PluginSettingTab {
 
 				// Создаем DOM новой формы
 				let containerGhostItemEl = containerParentItemEl.createEl('div', {
-					cls: 'ghost-item-container'
+					cls: 'ac-ghost-item-container'
 				})
 
 				let formGhostItemEl = containerGhostItemEl.createEl('form', {
@@ -478,7 +442,7 @@ class MainSettingTab extends PluginSettingTab {
 				let inputFormGhostItemEl = formGhostItemEl.createEl('input', {
 					type: 'text',
 					attr: {
-						pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]',
+						pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]|[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}',
 						required: 'true'
 					}
 				});
@@ -486,30 +450,21 @@ class MainSettingTab extends PluginSettingTab {
 
 				let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
 					text: 'Add',
-					type: 'submit'
 				});
+				buttonSubmitFormGhostItemEl.type = 'submit';
 
 
+				/**
+				 * Перехватывает событие по отправки формы
+				 * @param event Событие, которое необходимо прервать
+				 */
+				function handleFormSubmit (event: { preventDefault: () => void; }) {
+					event.preventDefault();
+					inputGhostItemValue = inputFormGhostItemEl.value;
+					resolvePromise(inputGhostItemValue);
+				}
 
-				/*
-				let containerGhostItemEl = parentItemContainerEl.createEl('div', {
-					cls: 'ghost-item-container'
-				});
-
-				let inputGhostItemEl = containerGhostItemEl.createEl('input', {
-					type: 'text'
-				});
-				inputGhostItemEl.focus();
-
-
-				let buttonGhostItemEl = containerGhostItemEl.createEl('button', {
-					text: 'Submit'
-				});*/
-
-				/*buttonGhostItemEl.onclick = () => {
-					inputGhostItemValue = inputGhostItemEl.value;
-					resolvePromise(inputGhostItemValue); // Разрешаем промис при клике
-				};*/
+				formGhostItemEl.addEventListener('submit', handleFormSubmit);
 
 				return await promise;
 		}
