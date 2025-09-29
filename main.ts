@@ -288,10 +288,6 @@ class MainSettingTab extends PluginSettingTab {
 								});	
 
 							}, { once: true });
-
-							// Удаляем обработчик событий Button Rename Item
-							//containerItemNameEl
-
 							
 							// Создается контейнер блока управления в родительском контейнере 
 							let itemControlContainerEl = itemContainerEl.createEl('div', {
@@ -311,8 +307,12 @@ class MainSettingTab extends PluginSettingTab {
 								
 								// Обработка кнопки Add Child Folder
 
-								buttonAddChildFolderEl.addEventListener('click', () => {
-									createGhostItem(itemContainerEl).then(answer => {
+								buttonAddChildFolderEl.addEventListener('click', (event) => {
+								
+									createGhostItem(itemContainerEl, event.currentTarget).then(answer => {
+										if (answer.length == 0) {
+											answer = 'New folder'
+										}
 										
 										value.itemChilds.push({
 											itemType: 'folder',
@@ -327,15 +327,14 @@ class MainSettingTab extends PluginSettingTab {
 									});
 								}, { once: true });
 
-								// Test
-
-
-								let i = 0;
-
+		
 								// Обработка кнопки Add Child File
-								buttonAddChildFileEl.addEventListener('click', () => {
-									createGhostItem(itemContainerEl).then(answer => {
-									
+								buttonAddChildFileEl.addEventListener('click', (event) => {
+									createGhostItem(itemContainerEl, event.currentTarget).then(answer => {
+										if (answer.length == 0) {
+											answer = 'New file'
+										}
+										
 										value.itemChilds.push({
 											itemType: 'file',
 											itemName: answer,
@@ -413,13 +412,18 @@ class MainSettingTab extends PluginSettingTab {
 			}
 
 
+		function createGhostItemForm (containerParentItemEl) {
+			
+		}	
+
+
 		/**
 		 * Создает призрачный контейнер будующего Item с полями для ввода данных
 		 * @param containerParentItemEl 
 		 * @returns promise
 		 */
 
-		async function createGhostItem(containerParentItemEl: HTMLDivElement) {
+		async function createGhostItem(containerParentItemEl: HTMLDivElement, eventObject: EventTarget | null | undefined) {
 				let inputGhostItemValue = '';
 				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
 
@@ -465,6 +469,23 @@ class MainSettingTab extends PluginSettingTab {
 				}
 
 				formGhostItemEl.addEventListener('submit', handleFormSubmit);
+				
+				function removeGhsotItem () {
+					formGhostItemEl.removeEventListener;
+					containerGhostItemEl.remove;
+					resolvePromise(inputGhostItemValue);
+				}
+
+				
+
+				document.addEventListener('click', (event)=> {
+					 if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target) && event.target !== eventObject) {
+						removeGhsotItem();
+   					 }
+				})
+
+
+
 
 				return await promise;
 		}
