@@ -235,14 +235,14 @@ class MainSettingTab extends PluginSettingTab {
 							function createContainer (parentContainer: HTMLElement) {
 											
 							// Создается родительский контейнер элемента
-							let itemContainerEl = parentContainer.createEl('div', {
+							let containerItemEl = parentContainer.createEl('div', {
 								cls: 'setting-item, ' + cssClassContainerElement  
 							});
 							// Добавляем DOM элемент для value
 							//value.domContainer = containerSettingItem
 
 							// Создается контейнер блока информации в родительском контейнере
-							let containerItemInfoEl = itemContainerEl.createEl('div', {
+							let containerItemInfoEl = containerItemEl.createEl('div', {
 								cls: 'setting-item-info',
 							})
 							// Создаем информацию в контейнере блока информации
@@ -255,11 +255,23 @@ class MainSettingTab extends PluginSettingTab {
 							});
 
 							// Добавляем обработчик событий Rename Item
-							containerItemNameEl.addEventListener('click', () => {
+							containerItemNameEl.addEventListener('click', (event) => {
 								
 								containerItemNameEl.classList.add('ac-hold');
 
+								createGhostItem(containerItemInfoEl, event.currentTarget).then(answer => {
+									console.log(answer);
+									if (answer.length != 0) {
+										value.itemName = answer;
+									}										
+									plugin.saveSettings();
+									deleteCatalogContainer(containerCatalog);
+									uploadCatalogContainer(undefined, catalog, containerCatalog);
+									
+								});
 
+
+								/*
 								let inputNewNameItemEl = containerItemInfoEl.createEl('input', {
 									placeholder: 'New name'
 								});
@@ -285,12 +297,12 @@ class MainSettingTab extends PluginSettingTab {
 
 									deleteCatalogContainer(containerCatalog);
 									uploadCatalogContainer(undefined, catalog, containerCatalog);
-								});	
+								});	*/
 
 							}, { once: true });
 							
 							// Создается контейнер блока управления в родительском контейнере 
-							let itemControlContainerEl = itemContainerEl.createEl('div', {
+							let itemControlContainerEl = containerItemEl.createEl('div', {
 								cls: 'setting-item-control',
 							});
 
@@ -309,7 +321,7 @@ class MainSettingTab extends PluginSettingTab {
 
 								buttonAddChildFolderEl.addEventListener('click', (event) => {
 								
-									createGhostItem(itemContainerEl, event.currentTarget).then(answer => {
+									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
 										if (answer.length == 0) {
 											answer = 'New folder'
 										}
@@ -330,7 +342,7 @@ class MainSettingTab extends PluginSettingTab {
 		
 								// Обработка кнопки Add Child File
 								buttonAddChildFileEl.addEventListener('click', (event) => {
-									createGhostItem(itemContainerEl, event.currentTarget).then(answer => {
+									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
 										if (answer.length == 0) {
 											answer = 'New file'
 										}
@@ -359,13 +371,13 @@ class MainSettingTab extends PluginSettingTab {
 							// Оброботчик кнопки Delete у элемента
 							buttonElementRemove.onclick = function() {	
 								delete catalogDir[i];
-								itemContainerEl.remove();
+								containerItemEl.remove();
 								plugin.saveSettings();
 							};
 							
 							if (value.itemChilds.length > 0) {
 
-								uploadCatalogContainer(undefined, value.itemChilds, itemContainerEl, nestingLevel)
+								uploadCatalogContainer(undefined, value.itemChilds, containerItemEl, nestingLevel)
 							};
 
 							//uploadDomArray(domCatalog, nestingLevel)
@@ -471,6 +483,7 @@ class MainSettingTab extends PluginSettingTab {
 				formGhostItemEl.addEventListener('submit', handleFormSubmit);
 				
 				function removeGhsotItem () {
+					console.log('Удаляю', containerGhostItemEl)
 					formGhostItemEl.removeEventListener;
 					containerGhostItemEl.remove;
 					resolvePromise(inputGhostItemValue);
@@ -479,6 +492,7 @@ class MainSettingTab extends PluginSettingTab {
 				
 
 				document.addEventListener('click', (event)=> {
+					console.log(containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target) && event.target !== eventObject)
 					 if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target) && event.target !== eventObject) {
 						removeGhsotItem();
    					 }
