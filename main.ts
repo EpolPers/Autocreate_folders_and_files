@@ -260,7 +260,6 @@ class MainSettingTab extends PluginSettingTab {
 								containerItemNameEl.classList.add('ac-hold');
 
 								createGhostItem(containerItemInfoEl, event.currentTarget).then(answer => {
-									console.log(answer);
 									if (answer.length != 0) {
 										value.itemName = answer;
 									}										
@@ -269,35 +268,6 @@ class MainSettingTab extends PluginSettingTab {
 									uploadCatalogContainer(undefined, catalog, containerCatalog);
 									
 								});
-
-
-								/*
-								let inputNewNameItemEl = containerItemInfoEl.createEl('input', {
-									placeholder: 'New name'
-								});
-
-
-								let buttonSubmitRenameItemEl = containerItemInfoEl.createEl('button', {
-									text: 'Ok',
-								});
-								inputNewNameItemEl.focus();
-
-								getInputValue(buttonSubmitRenameItemEl, inputNewNameItemEl, value.itemName).then(valueInput => {
-									
-									if (valueInput.length > 0) {
-										value.itemName = valueInput;
-									}
-									
-									containerItemNameEl.classList.remove('ac-hold');
-
-									inputNewNameItemEl.remove();
-									buttonSubmitRenameItemEl.remove();
-									
-									plugin.saveSettings();
-
-									deleteCatalogContainer(containerCatalog);
-									uploadCatalogContainer(undefined, catalog, containerCatalog);
-								});	*/
 
 							}, { once: true });
 							
@@ -401,16 +371,17 @@ class MainSettingTab extends PluginSettingTab {
 			}
 
 
+			
 			/**
 			 * 
 			 * @param buttonSubmitEl 
 			 * @param inputEl 
 			 * @returns 
 			 */
-
+			/*
 			async function getInputValue (buttonSubmitEl: HTMLButtonElement, inputEl: HTMLInputElement, variable: any) {
 				let inputValue = '';
-				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
+				let resolvePromise: (value: String) => void; // Хранит ссылку на функцию resolve
 				const promise = new Promise((resolve) => {
 					resolvePromise = resolve;
 				});
@@ -421,13 +392,7 @@ class MainSettingTab extends PluginSettingTab {
 
 				variable = promise;
 				return await variable;
-			}
-
-
-		function createGhostItemForm (containerParentItemEl) {
-			
-		}	
-
+			}*/
 
 		/**
 		 * Создает призрачный контейнер будующего Item с полями для ввода данных
@@ -437,10 +402,10 @@ class MainSettingTab extends PluginSettingTab {
 
 		async function createGhostItem(containerParentItemEl: HTMLDivElement, eventObject: EventTarget | null | undefined) {
 				let inputGhostItemValue = '';
-				let resolvePromise: (value: unknown) => void; // Хранит ссылку на функцию resolve
+				let resolvePromise: (value: string) => void; // Хранит ссылку на функцию resolve
 
 				// Создаем промис, который будет ожидать ввода
-				const promise = new Promise((resolve) => {
+				const promise = new Promise<string>((resolve) => {
 					resolvePromise = resolve;
 				});
 
@@ -465,7 +430,7 @@ class MainSettingTab extends PluginSettingTab {
 				inputFormGhostItemEl.focus();
 
 				let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
-					text: 'Add',
+					text: 'Ok',
 				});
 				buttonSubmitFormGhostItemEl.type = 'submit';
 
@@ -492,8 +457,8 @@ class MainSettingTab extends PluginSettingTab {
 				
 
 				document.addEventListener('click', (event)=> {
-					console.log(containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target) && event.target !== eventObject)
-					 if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target) && event.target !== eventObject) {
+					console.log(containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target as HTMLElement) && event.target !== eventObject)
+					 if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target as HTMLElement) && event.target !== eventObject) {
 						removeGhsotItem();
    					 }
 				})
