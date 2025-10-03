@@ -225,7 +225,7 @@ class MainSettingTab extends PluginSettingTab {
 				nestingLevel = nestingLevel + 1;
 
 				catalogDir.forEach((value: {
-					itemChilds: any; itemType: string; itemName: string; }, i: number) => {
+					itemChilds: any; itemType: string; itemName: string; }, i: number, array) => {
 					
 						if (value !== null){
 					
@@ -260,8 +260,9 @@ class MainSettingTab extends PluginSettingTab {
 								containerItemNameEl.classList.add('ac-hold');
 
 								createGhostItem(containerItemInfoEl, event.currentTarget).then(answer => {
-									if (answer.length != 0) {
-										value.itemName = answer;
+									if (answer.length != 0 && value.itemName !== answer) {
+										let newItemName = findsUniqueName(array, answer, value.itemType);
+										value.itemName = newItemName;
 									}										
 									plugin.saveSettings();
 									deleteCatalogContainer(containerCatalog);
@@ -293,19 +294,21 @@ class MainSettingTab extends PluginSettingTab {
 								
 									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
 										if (answer.length == 0) {
-											answer = 'New folder'
-										}
-										
-										value.itemChilds.push({
-											itemType: 'folder',
-											itemName: answer,
-											itemChilds: [] 
-										});
-										plugin.saveSettings();
+											deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog);
+										} else {
+											let newItemName = findsUniqueName(value.itemChilds, answer, 'folder');
+											value.itemChilds.push({
+												itemType: 'folder',
+												itemName: newItemName,
+												itemChilds: [] 
+											});
+											plugin.saveSettings();
 
-										deleteCatalogContainer(containerCatalog);
-										uploadCatalogContainer(undefined, catalog, containerCatalog);
-									
+											deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog);
+										}								
+																			
 									});
 								}, { once: true });
 
@@ -314,19 +317,21 @@ class MainSettingTab extends PluginSettingTab {
 								buttonAddChildFileEl.addEventListener('click', (event) => {
 									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
 										if (answer.length == 0) {
-											answer = 'New file'
-										}
-										
-										value.itemChilds.push({
-											itemType: 'file',
-											itemName: answer,
-											itemChilds: [] 
-										});
-										plugin.saveSettings();
+											deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog);
+										} else {
+											let newItemName = findsUniqueName(value.itemChilds, answer, 'file');
+											value.itemChilds.push({
+												itemType: 'file',
+												itemName: newItemName,
+												itemChilds: [] 
+											});
+											plugin.saveSettings();
 
-										deleteCatalogContainer(containerCatalog);
-										uploadCatalogContainer(undefined, catalog, containerCatalog);
-									
+											deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog);
+										}								
+																			
 									});
 								}, { once: true });
 							
@@ -350,8 +355,6 @@ class MainSettingTab extends PluginSettingTab {
 								uploadCatalogContainer(undefined, value.itemChilds, containerItemEl, nestingLevel)
 							};
 
-							//uploadDomArray(domCatalog, nestingLevel)
-
 							}
 							createContainer(parentContainer);
 					}
@@ -360,39 +363,56 @@ class MainSettingTab extends PluginSettingTab {
 			
 			}
 			/**
-			 * 
+			 * Очищает DOM дерево созданное на основе Catalog
 			 * @param deletableCatalogContainerEl: HTMLDivElement - DOM элемент содержащий все ноды каталога  
 			 */
 			function deleteCatalogContainer (deletableCatalogContainerEl: HTMLDivElement){
-				console.log('Вызвана функция удаления контейнера каталога');
+				console.log('Вызвана функция удаления контейнера каталога'); //🗑️
 				deletableCatalogContainerEl.querySelectorAll('.' + cssClassContainerElement).forEach((item)=>{
 					item.remove();
 				})
 			}
 
 
-			
-			/**
-			 * 
-			 * @param buttonSubmitEl 
-			 * @param inputEl 
-			 * @returns 
-			 */
-			/*
-			async function getInputValue (buttonSubmitEl: HTMLButtonElement, inputEl: HTMLInputElement, variable: any) {
-				let inputValue = '';
-				let resolvePromise: (value: String) => void; // Хранит ссылку на функцию resolve
-				const promise = new Promise((resolve) => {
-					resolvePromise = resolve;
-				});
-				buttonSubmitEl.onclick = () => {
-					inputValue = inputEl.value;
-					resolvePromise(inputValue); // Разрешаем промис при клике
-				};
+		/**
+		 * Проверяет массив объектов на наличие одинаковых имен между уже существующим и тем, которое функция принимает в качестве аргумента.
+		 * @param arrayWhereFind текущий массив объектов, дочерний Catalog
+		 * @param newName имя которое нужно проверить на уникальность
+		 * @param newType типа Item который имеет newName
+		 * @retirns currentName + уникальный индекс созданный функцией 
+		 */
 
-				variable = promise;
-				return await variable;
-			}*/
+		function findsUniqueName (arrayWhereFind: any[], newName: string, newType: string) {
+			if (arrayWhereFind.length == 0) {
+				return newName;
+			} else {
+				const hasName = arrayWhereFind.some(item => item.itemName == newName && item.itemType == newType);
+				if (!hasName) {
+					return newName;
+				} else {
+					
+					let newNameArr: (any) = newName.split(" ");
+					if (isNaN(Number(newNameArr[newNameArr.length-1]))) {
+						newNameArr.push('1');
+						newName = newNameArr.join(" ")	
+					} else {
+						let nameIndex: (string|number) = newNameArr[newNameArr.length-1];
+						newNameArr[newNameArr.length-1]++;
+						newName = newNameArr.join(" ")	
+					}
+					
+					for (; arrayWhereFind.some(item => item.itemName == newName && item.itemType == newType);){
+						newNameArr = newName.split(" ");
+						newNameArr[newNameArr.length-1]++;
+						newName = newNameArr.join(" ")	
+					};
+					new Notice('An item with that name already exists in this directory, so the "'+ newName +'" item was created.');
+					console.log('An item with that name already exists in this directory, so the "'+ newName +'" item was created.')
+					return newName;
+				}	
+			}
+			
+		}
 
 		/**
 		 * Создает призрачный контейнер будующего Item с полями для ввода данных
