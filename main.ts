@@ -131,13 +131,12 @@ class MainSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const {containerEl} = this;
-		const settings = this.plugin.settings;
-		const catalog = this.plugin.settings.catalogElements;
 		const plugin = this.plugin;
-
+		const settings = plugin.settings;
+		const catalog = settings.catalogElements;
+		
+		const availableItemTypes = ['folder', 'file'];
 		const cssClassContainerElement = 'catalog-item';
-
-		let domCatalog: any[] = [];
 				
 		containerEl.empty();
 
@@ -164,7 +163,7 @@ class MainSettingTab extends PluginSettingTab {
 				.onClick(async () => {
 					if (settings.valueInput.length > 0) {
 						catalog.push({
-						itemType: 'file',
+						itemType: availableItemTypes[1],
 						itemName: settings.valueInput,
 						itemChilds: [],
 						});
@@ -182,7 +181,7 @@ class MainSettingTab extends PluginSettingTab {
 					
 					if (settings.valueInput.length > 0) {
 						catalog.push({
-						itemType: 'folder',
+						itemType: availableItemTypes[0],
 						itemName: settings.valueInput,
 						itemChilds: [],
 					});
@@ -204,7 +203,13 @@ class MainSettingTab extends PluginSettingTab {
 			 * @param indexCreateElement {number | undefinde} индекс элемента, который нужно добавить, если undefined, то обновляет весь список
 			 */
 
-			function uploadCatalogContainer (indexCreateElement: number | undefined, catalogDir: { itemType: string; itemName: string; }[], parentContainer: HTMLElement, nestingLevel = -1) {
+			function uploadCatalogContainer (
+				indexCreateElement: number | undefined, 
+				catalogDir: { itemType: string; itemName: string; }[], 
+				parentContainer: HTMLElement, 
+				nestingLevel = -1,
+				isDeleteCreatedItems: boolean = false,
+			){
 				
 				
 				function deletesNullValue (currentCatalog: any[]){
@@ -221,6 +226,9 @@ class MainSettingTab extends PluginSettingTab {
 
 				deletesNullValue(catalog);
 
+				if (isDeleteCreatedItems) {
+					deleteCatalogContainer(parentContainer);
+				}
 
 				nestingLevel = nestingLevel + 1;
 
@@ -265,7 +273,7 @@ class MainSettingTab extends PluginSettingTab {
 										value.itemName = newItemName;
 									}										
 									plugin.saveSettings();
-									deleteCatalogContainer(containerCatalog);
+									
 									uploadCatalogContainer(undefined, catalog, containerCatalog);
 									
 								});
@@ -279,7 +287,7 @@ class MainSettingTab extends PluginSettingTab {
 
 							// Создаем органы управления в контейнере блока управления в зависимости от условий
 							// Если это папка то создается кнопка добавления файлов как орган управления
-							if (value.itemType == 'folder') {
+							if (value.itemType == availableItemTypes[0]) {
 
 								let buttonAddChildFileEl = itemControlContainerEl.createEl('button', {
 									text: 'Add File'
@@ -294,19 +302,19 @@ class MainSettingTab extends PluginSettingTab {
 								
 									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
 										if (answer.length == 0) {
-											deleteCatalogContainer(containerCatalog);
-											uploadCatalogContainer(undefined, catalog, containerCatalog);
+											//deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 										} else {
-											let newItemName = findsUniqueName(value.itemChilds, answer, 'folder');
+											let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[0]);
 											value.itemChilds.push({
-												itemType: 'folder',
+												itemType: availableItemTypes[0],
 												itemName: newItemName,
 												itemChilds: [] 
 											});
 											plugin.saveSettings();
 
-											deleteCatalogContainer(containerCatalog);
-											uploadCatalogContainer(undefined, catalog, containerCatalog);
+											//deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 										}								
 																			
 									});
@@ -317,19 +325,19 @@ class MainSettingTab extends PluginSettingTab {
 								buttonAddChildFileEl.addEventListener('click', (event) => {
 									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
 										if (answer.length == 0) {
-											deleteCatalogContainer(containerCatalog);
-											uploadCatalogContainer(undefined, catalog, containerCatalog);
+											//deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 										} else {
-											let newItemName = findsUniqueName(value.itemChilds, answer, 'file');
+											let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[1]);
 											value.itemChilds.push({
-												itemType: 'file',
+												itemType: availableItemTypes [1],
 												itemName: newItemName,
 												itemChilds: [] 
 											});
 											plugin.saveSettings();
 
-											deleteCatalogContainer(containerCatalog);
-											uploadCatalogContainer(undefined, catalog, containerCatalog);
+											//deleteCatalogContainer(containerCatalog);
+											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 										}								
 																			
 									});
@@ -362,16 +370,18 @@ class MainSettingTab extends PluginSettingTab {
 				});
 			
 			}
-			/**
-			 * Очищает DOM дерево созданное на основе Catalog
-			 * @param deletableCatalogContainerEl: HTMLDivElement - DOM элемент содержащий все ноды каталога  
-			 */
-			function deleteCatalogContainer (deletableCatalogContainerEl: HTMLDivElement){
-				console.log('Вызвана функция удаления контейнера каталога'); //🗑️
-				deletableCatalogContainerEl.querySelectorAll('.' + cssClassContainerElement).forEach((item)=>{
-					item.remove();
-				})
-			}
+
+
+		/**
+		 * Очищает DOM дерево созданное на основе Catalog
+		 * @param deletableCatalogContainerEl: HTMLDivElement - DOM элемент содержащий все ноды каталога, которые нужно удалить 
+		 */
+		function deleteCatalogContainer (deletableCatalogContainerEl: HTMLElement){
+			console.log('Вызвана функция удаления контейнера каталога'); //🗑️
+			deletableCatalogContainerEl.querySelectorAll('.' + cssClassContainerElement).forEach((item)=>{
+				item.remove();
+			})
+		}
 
 
 		/**
@@ -468,7 +478,6 @@ class MainSettingTab extends PluginSettingTab {
 				formGhostItemEl.addEventListener('submit', handleFormSubmit);
 				
 				function removeGhsotItem () {
-					console.log('Удаляю', containerGhostItemEl)
 					formGhostItemEl.removeEventListener;
 					containerGhostItemEl.remove;
 					resolvePromise(inputGhostItemValue);
@@ -477,7 +486,6 @@ class MainSettingTab extends PluginSettingTab {
 				
 
 				document.addEventListener('click', (event)=> {
-					console.log(containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target as HTMLElement) && event.target !== eventObject)
 					 if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target as HTMLElement) && event.target !== eventObject) {
 						removeGhsotItem();
    					 }
