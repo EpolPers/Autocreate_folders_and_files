@@ -7,9 +7,83 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-.catalog-item {
+.container-catalog {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    padding: 20px;
+    margin-left: 5px;
+}
+
+.ac-item-container {
+    width: 100%;
+    min-height: 50px;
+    display: flow-root;
+    gap: 0;
     padding-left: 20px;
-    border-left: 1px solid black ;
+    border-inline-start: var(--nav-indentation-guide-width) solid var(--nav-indentation-guide-color);
+    transition: background-color 0.2s;
+}
+
+.ac-item-container:hover {
+    color: var(--nav-item-color-hover);
+    border-color: var(--interactive-accent);
+    /*background-color: var(--nav-item-background-hover);*/
+}
+
+.ac-setting-item-info, .ac-setting-item-control {
+    width: 50%;
+    float: left;
+}
+
+.ac-setting-item-info {
+    display: inline-block;
+    padding-top: 5px;
+}
+
+.ac-ghost-item-container {
+    padding-top: 5px;
+}
+
+.ac-input-ghost-item {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.ac-input-ghost-item, .ac-input-ghost-item:active, .ac-input-ghost-item:focus {
+    border-top: 0px !important;
+    border-left: 0px !important;
+    border-right: 0px !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.ac-input-ghost-item:focus {
+    border-color: var(--interactive-accent) !important;
+}
+
+.ac-setting-item-control {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-right: 10px;
+}
+
+.ac-delete-button {
+    background-color: rgba(var(--color-red-rgb), 0.4) !important;
+}
+
+.ac-item-name, .ac-item-type {
+    float: left;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.ac-item-name {
+    width: auto;
+    margin-left: 5px;
+}
+
+.ac-item-type {
+    width: auto;
 }
 
 .ac-hold {
@@ -19,3 +93,5 @@ If your plugin does not need CSS, delete this file.
 .ac-item-name:hover {
     cursor: text;
 }
+
+

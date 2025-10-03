@@ -4,7 +4,7 @@
  * Item - единичная структура каталога, которая создается на основании правил предопределенных пользователем.
  */
 
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting } from 'obsidian';
 import { start } from 'repl';
 
 // Remember to rename these classes and interfaces!
@@ -161,10 +161,12 @@ class MainSettingTab extends PluginSettingTab {
 				.setTooltip('Add file')
 				.setIcon("file-plus")
 				.onClick(async () => {
+					console.log(catalogSettings.components);
 					if (settings.valueInput.length > 0) {
+						let newNameItem = findsUniqueName(catalog, settings.valueInput, availableItemTypes[1])
 						catalog.push({
 						itemType: availableItemTypes[1],
-						itemName: settings.valueInput,
+						itemName: newNameItem,
 						itemChilds: [],
 						});
 					uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog);
@@ -179,10 +181,12 @@ class MainSettingTab extends PluginSettingTab {
 				.setIcon("folder-plus")
 				.onClick(async () => {
 					
+					
 					if (settings.valueInput.length > 0) {
+						let newNameItem = findsUniqueName(catalog, settings.valueInput, availableItemTypes[0])
 						catalog.push({
 						itemType: availableItemTypes[0],
-						itemName: settings.valueInput,
+						itemName: newNameItem,
 						itemChilds: [],
 					});
 					uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog);
@@ -244,19 +248,31 @@ class MainSettingTab extends PluginSettingTab {
 											
 							// Создается родительский контейнер элемента
 							let containerItemEl = parentContainer.createEl('div', {
-								cls: 'setting-item, ' + cssClassContainerElement  
+								cls: cssClassContainerElement  
 							});
+							containerItemEl.classList.add('ac-item-container');
+
 							// Добавляем DOM элемент для value
 							//value.domContainer = containerSettingItem
 
 							// Создается контейнер блока информации в родительском контейнере
 							let containerItemInfoEl = containerItemEl.createEl('div', {
-								cls: 'setting-item-info',
+								cls: 'setting-item-info'
 							})
+							containerItemInfoEl.classList.add('ac-setting-item-info');
+
 							// Создаем информацию в контейнере блока информации
 							let containerItemTypeEl = containerItemInfoEl.createEl('div', {
-								text: '{' + value.itemType + '} ',
+								text: '{' + value.itemType + '}',
+								cls: 'ac-item-type'
 							});
+							if (value.itemType == availableItemTypes[0]) {
+								setIcon(containerItemTypeEl, 'folder');
+							} else if (value.itemType == availableItemTypes[1]) {
+								setIcon(containerItemTypeEl, 'file');
+							}
+							
+
 							let containerItemNameEl = containerItemInfoEl.createEl('p',{
 								text: value.itemName,
 								cls: 'ac-item-name'
@@ -274,7 +290,7 @@ class MainSettingTab extends PluginSettingTab {
 									}										
 									plugin.saveSettings();
 									
-									uploadCatalogContainer(undefined, catalog, containerCatalog);
+									uploadCatalogContainer(undefined, catalog, containerCatalog, -1, true);
 									
 								});
 
@@ -282,8 +298,9 @@ class MainSettingTab extends PluginSettingTab {
 							
 							// Создается контейнер блока управления в родительском контейнере 
 							let itemControlContainerEl = containerItemEl.createEl('div', {
-								cls: 'setting-item-control',
+								cls: 'setting-item-control'
 							});
+							itemControlContainerEl.classList.add('ac-setting-item-control');
 
 							// Создаем органы управления в контейнере блока управления в зависимости от условий
 							// Если это папка то создается кнопка добавления файлов как орган управления
@@ -292,9 +309,11 @@ class MainSettingTab extends PluginSettingTab {
 								let buttonAddChildFileEl = itemControlContainerEl.createEl('button', {
 									text: 'Add File'
 								});
+								setIcon(buttonAddChildFileEl, 'file-plus');
 								let buttonAddChildFolderEl = itemControlContainerEl.createEl('button', {
 									text: 'Add Folder'
 								});
+								setIcon(buttonAddChildFolderEl, 'folder-plus');
 								
 								// Обработка кнопки Add Child Folder
 
@@ -347,8 +366,10 @@ class MainSettingTab extends PluginSettingTab {
 							
 							// Создается кнопка удаления данного элемента в контейнер блока управления
 							let buttonElementRemove = itemControlContainerEl.createEl('button', {
-								text: 'Delete'
+								text: 'Delete',
+								cls: 'ac-delete-button'
 							});
+							setIcon(buttonElementRemove, 'trash');
 							
 							
 							// Оброботчик кнопки Delete у элемента
@@ -455,15 +476,17 @@ class MainSettingTab extends PluginSettingTab {
 					attr: {
 						pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]|[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}',
 						required: 'true'
-					}
+					},
+					cls: 'ac-input-ghost-item'
 				});
 				inputFormGhostItemEl.focus();
 
 				let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
 					text: 'Ok',
 				});
+				setIcon(buttonSubmitFormGhostItemEl, 'check');
 				buttonSubmitFormGhostItemEl.type = 'submit';
-
+			
 
 				/**
 				 * Перехватывает событие по отправки формы
