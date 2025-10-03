@@ -41,8 +41,13 @@ If your plugin does not need CSS, delete this file.
 }
 
 .ac-ghost-item-container {
-    padding-top: 5px;
+    width: 75%;
 }
+
+.ac-form-ghost-item {
+    width: 100%;
+}
+
 
 .ac-input-ghost-item {
     margin-left: 5px;
@@ -55,8 +60,12 @@ If your plugin does not need CSS, delete this file.
     border-right: 0px !important;
     box-shadow: none !important;
     border-radius: 0 !important;
+    background-color: rgba(0, 0, 0, 0) !important;
 }
 
+.ac-input-ghost-item:hover, .ac-input-ghost-item:focus {
+    background-color: rgba(0, 0, 0, 0) !important;
+}
 .ac-input-ghost-item:focus {
     border-color: var(--interactive-accent) !important;
 }
@@ -67,14 +76,49 @@ If your plugin does not need CSS, delete this file.
     padding-right: 10px;
 }
 
+.ac-add-file-button, .ac-add-folder-button {
+    background-color: rgba(0, 0, 0, 0) !important;
+    box-shadow: none !important;
+    color: var(--icon-color) !important;
+}
+
+.ac-add-file-button svg, .ac-add-folder-button svg {
+    pointer-events: none;
+}
+
+.ac-add-file-button:hover, .ac-add-folder-button:hover {
+    cursor: pointer;
+    opacity: var(--icon-opacity-hover);
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--icon-color-hover) !important;
+    
+}
+
 .ac-delete-button {
     background-color: rgba(var(--color-red-rgb), 0.4) !important;
 }
 
-.ac-item-name, .ac-item-type {
+.ac-delete-button:hover {
+    cursor: pointer;
+}
+
+.ac-item-name, .ac-item-type, .ac-collapse {
     float: left;
     margin-top: 10px;
+    margin-left: 20px;
     margin-bottom: 10px;
+    font-size: var(--font-ui-medium);
+    color: var(--text-normal);
+}
+.ac-collapse {
+    position: absolute;
+    margin-inline-start: calc(-1* var(--size-4-2));
+    color: var(--nav-collapse-icon-color);
+}
+
+.ac-collapse:active {
+    transform: rotate(90deg);
+
 }
 
 .ac-item-name {

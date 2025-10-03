@@ -146,8 +146,8 @@ class MainSettingTab extends PluginSettingTab {
 	
 
 		const catalogSettings = new Setting(containerCatalog)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Catalog #1')
+			.setDesc('Create a template for files and folders that can be added from the context menu of the file manager.')
 			.addText(elementNameInput => elementNameInput
 				.setPlaceholder('Name file or folder')
 				//.setValue(this.plugin.settings.catalog)
@@ -262,6 +262,14 @@ class MainSettingTab extends PluginSettingTab {
 							containerItemInfoEl.classList.add('ac-setting-item-info');
 
 							// Создаем информацию в контейнере блока информации
+							if (value.itemType == availableItemTypes[0]){
+							let collapseEl = containerItemInfoEl.createEl('div', {
+								text: '>',
+								cls: 'ac-collapse'
+							});
+							
+							setIcon(collapseEl, 'chevron-right');
+							}
 							let containerItemTypeEl = containerItemInfoEl.createEl('div', {
 								text: '{' + value.itemType + '}',
 								cls: 'ac-item-type'
@@ -283,7 +291,7 @@ class MainSettingTab extends PluginSettingTab {
 								
 								containerItemNameEl.classList.add('ac-hold');
 
-								createGhostItem(containerItemInfoEl, event.currentTarget).then(answer => {
+								createGhostItem(containerItemInfoEl, event.currentTarget, value.itemName).then(answer => {
 									if (answer.length != 0 && value.itemName !== answer) {
 										let newItemName = findsUniqueName(array, answer, value.itemType);
 										value.itemName = newItemName;
@@ -307,11 +315,13 @@ class MainSettingTab extends PluginSettingTab {
 							if (value.itemType == availableItemTypes[0]) {
 
 								let buttonAddChildFileEl = itemControlContainerEl.createEl('button', {
-									text: 'Add File'
+									text: 'Add File',
+									cls: 'ac-add-file-button'
 								});
 								setIcon(buttonAddChildFileEl, 'file-plus');
 								let buttonAddChildFolderEl = itemControlContainerEl.createEl('button', {
-									text: 'Add Folder'
+									text: 'Add Folder',
+									cls: 'ac-add-folder-button'
 								});
 								setIcon(buttonAddChildFolderEl, 'folder-plus');
 								
@@ -319,7 +329,7 @@ class MainSettingTab extends PluginSettingTab {
 
 								buttonAddChildFolderEl.addEventListener('click', (event) => {
 								
-									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
+									createGhostItem(containerItemEl, event.currentTarget, 'Name child folder').then(answer => {
 										if (answer.length == 0) {
 											//deleteCatalogContainer(containerCatalog);
 											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
@@ -342,11 +352,13 @@ class MainSettingTab extends PluginSettingTab {
 		
 								// Обработка кнопки Add Child File
 								buttonAddChildFileEl.addEventListener('click', (event) => {
-									createGhostItem(containerItemEl, event.currentTarget).then(answer => {
+									createGhostItem(containerItemEl, event.currentTarget, 'Name Child File').then(answer => {
 										if (answer.length == 0) {
+											console.log('Fail')
 											//deleteCatalogContainer(containerCatalog);
 											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 										} else {
+											
 											let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[1]);
 											value.itemChilds.push({
 												itemType: availableItemTypes [1],
@@ -447,11 +459,13 @@ class MainSettingTab extends PluginSettingTab {
 
 		/**
 		 * Создает призрачный контейнер будующего Item с полями для ввода данных
-		 * @param containerParentItemEl 
+		 * @param containerParentItemEl
+		 * @param textPlaceholder  
 		 * @returns promise
 		 */
 
-		async function createGhostItem(containerParentItemEl: HTMLDivElement, eventObject: EventTarget | null | undefined) {
+		async function createGhostItem(containerParentItemEl: HTMLDivElement, eventObject: EventTarget | null | undefined, textPlaceholder: string) {
+			
 				let inputGhostItemValue = '';
 				let resolvePromise: (value: string) => void; // Хранит ссылку на функцию resolve
 
@@ -479,6 +493,7 @@ class MainSettingTab extends PluginSettingTab {
 					},
 					cls: 'ac-input-ghost-item'
 				});
+				inputFormGhostItemEl.placeholder = textPlaceholder;
 				inputFormGhostItemEl.focus();
 
 				let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
@@ -510,6 +525,7 @@ class MainSettingTab extends PluginSettingTab {
 
 				document.addEventListener('click', (event)=> {
 					 if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target as HTMLElement) && event.target !== eventObject) {
+						console.log(event.target)
 						removeGhsotItem();
    					 }
 				})
