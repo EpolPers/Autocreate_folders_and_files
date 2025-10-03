@@ -40,13 +40,11 @@ If your plugin does not need CSS, delete this file.
     padding-top: 5px;
 }
 
+
 .ac-ghost-item-container {
-    width: 75%;
+    display: inline-block;
 }
 
-.ac-form-ghost-item {
-    width: 100%;
-}
 
 
 .ac-input-ghost-item {

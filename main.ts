@@ -143,8 +143,8 @@ class MainSettingTab extends PluginSettingTab {
 		const containerCatalog = containerEl.createEl('div', {
 			cls: 'container-catalog'
 		})
-	
 
+			
 		const catalogSettings = new Setting(containerCatalog)
 			.setName('Catalog #1')
 			.setDesc('Create a template for files and folders that can be added from the context menu of the file manager.')
@@ -198,6 +198,9 @@ class MainSettingTab extends PluginSettingTab {
 				})
 			);
 			
+			
+
+
 
 
 
