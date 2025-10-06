@@ -7,6 +7,10 @@ If your plugin does not need CSS, delete this file.
 
 */
 
+.ac-hold {
+    display: none !important;
+}
+
 .container-catalog {
     border: 1px solid var(--background-modifier-border);
     border-radius: 5px;
@@ -38,6 +42,7 @@ If your plugin does not need CSS, delete this file.
 .ac-setting-item-info {
     display: inline-block;
     padding-top: 5px;
+    position: relative;
 }
 
 
@@ -100,7 +105,7 @@ If your plugin does not need CSS, delete this file.
     cursor: pointer;
 }
 
-.ac-item-name, .ac-item-type, .ac-collapse {
+.ac-item-name, .ac-item-type, .ac-button-collapse {
     float: left;
     margin-top: 10px;
     margin-left: 20px;
@@ -108,15 +113,20 @@ If your plugin does not need CSS, delete this file.
     font-size: var(--font-ui-medium);
     color: var(--text-normal);
 }
-.ac-collapse {
+
+.ac-collapse-button {
     position: absolute;
-    margin-inline-start: calc(-1* var(--size-4-2));
+    margin-inline-start: calc(-1* var(--size-4-3));
+    margin-bottom: ;
     color: var(--nav-collapse-icon-color);
+    background-color: rgba(0, 0, 0, 0) !important;
+    box-shadow: none !important;
+    top: var(--size-4-2);
 }
 
-.ac-collapse:active {
+.ac-is-expanded {
     transform: rotate(90deg);
-
+    color: var(--nav-collapse-icon-color-collapsed) !important;
 }
 
 .ac-item-name {
@@ -126,10 +136,6 @@ If your plugin does not need CSS, delete this file.
 
 .ac-item-type {
     width: auto;
-}
-
-.ac-hold {
-    display: none;
 }
 
 .ac-item-name:hover {

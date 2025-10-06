@@ -167,6 +167,9 @@ class MainSettingTab extends PluginSettingTab {
 						itemType: availableItemTypes[1],
 						itemName: newNameItem,
 						itemChilds: [],
+						settingKeys: {
+							isCollapsedSettingWindow: undefined
+						},
 						});
 					uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog);
 					
@@ -187,6 +190,9 @@ class MainSettingTab extends PluginSettingTab {
 						itemType: availableItemTypes[0],
 						itemName: newNameItem,
 						itemChilds: [],
+						settingKeys: {
+							isCollapsedSettingWindow: true
+						},
 					});
 					uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog);
 
@@ -202,7 +208,10 @@ class MainSettingTab extends PluginSettingTab {
 
 
 
-
+			/**
+			 * Функция сортирующая все элементы массива объектов в catalog по itemName и itemType, в том числе все вложенные массивы объектов в текущий массив объеквтов
+			 * @param catalogArray массим объектов, который необходимо сортироваться
+			 */
 
 			function sortsItem (catalogArray: any[]) {
 				
@@ -245,11 +254,17 @@ class MainSettingTab extends PluginSettingTab {
 				nestingLevel = -1,
 				isDeleteCreatedItems: boolean = false,
 			){
+
+				console.log(catalog)
 				
-				
+				/**
+				 * Удаляет все значения null в catalog
+				 * @param currentCatalog 
+				 */
+
 				function deletesNullValue (currentCatalog: any[]){
+					try {
 					currentCatalog.forEach((value, i) => {
-						console.log('Какие удалить из catalog', value)
 						if (value == null) {
 							if (currentCatalog.length > 1) {
 								currentCatalog.splice(i, 1)
@@ -262,6 +277,9 @@ class MainSettingTab extends PluginSettingTab {
 						}	
 					})
 					plugin.saveSettings();
+					} catch (err) {
+						console.log(deletesNullValue.name, err)
+					}
 				}
 
 				deletesNullValue(catalog);
@@ -273,6 +291,7 @@ class MainSettingTab extends PluginSettingTab {
 				nestingLevel = nestingLevel + 1;
 
 				catalogDir.forEach((value: {
+					settingKeys: any;
 					itemChilds: any; itemType: string; itemName: string; }, i: number, array) => {
 					
 						if (value !== null){
@@ -282,11 +301,25 @@ class MainSettingTab extends PluginSettingTab {
 
 							function createContainer (parentContainer: HTMLElement) {
 											
+							
 							// Создается родительский контейнер элемента
 							let containerItemEl = parentContainer.createEl('div', {
 								cls: cssClassContainerElement  
 							});
 							containerItemEl.classList.add('ac-item-container');
+							if (value.settingKeys.isCollapsedSettingWindow == true) {
+								containerItemEl.setAttribute('collapsed', 'true')
+							} else if (value.settingKeys.isCollapsedSettingWindow == false) {
+								containerItemEl.setAttribute('collapsed', 'false')
+							}
+							
+
+							// Если этот контейнер вложен в родительский контейнер и имеет значение ключа isCollapsedSettingWindow true или undefined то он скрывается. Необходимо для function collapsing
+							if (containerItemEl.parentNode.getAttribute('collapsed') === 'true') {
+								containerItemEl.classList.add('ac-hold');
+							}
+							
+
 
 							// Добавляем DOM элемент для value
 							//value.domContainer = containerSettingItem
@@ -297,15 +330,27 @@ class MainSettingTab extends PluginSettingTab {
 							})
 							containerItemInfoEl.classList.add('ac-setting-item-info');
 
-							// Создаем информацию в контейнере блока информации
+							// Создаем кнопку сворачивания
 							if (value.itemType == availableItemTypes[0]){
-							let collapseEl = containerItemInfoEl.createEl('div', {
-								text: '>',
-								cls: 'ac-collapse'
-							});
-							
-							setIcon(collapseEl, 'chevron-right');
+								let buttonCollapseEl = containerItemInfoEl.createEl('button', {
+									text: '>',
+									cls: 'ac-collapse-button'
+								});
+								setIcon(buttonCollapseEl, 'chevron-right');
+								if (containerItemEl.getAttribute('collapsed') === 'false') {
+									buttonCollapseEl.classList.add('ac-is-expanded');
+								}
+								
+								// Обработчик кнопки button collapse
+								buttonCollapseEl.addEventListener('click', () => {
+									switchButtonCollapse(containerItemEl, value);
+								})
+
+						
 							}
+
+							
+							// Создаем контэйнер с типом элемента
 							let containerItemTypeEl = containerItemInfoEl.createEl('div', {
 								text: '{' + value.itemType + '}',
 								cls: 'ac-item-type'
@@ -361,10 +406,12 @@ class MainSettingTab extends PluginSettingTab {
 								});
 								setIcon(buttonAddChildFolderEl, 'folder-plus');
 								
+
+								
 								// Обработка кнопки Add Child Folder
 
 								buttonAddChildFolderEl.addEventListener('click', (event) => {
-								
+									switchButtonCollapse(containerItemEl, value, true);
 									createGhostItem(containerItemEl, event.currentTarget, 'Name child folder').then(answer => {
 										if (answer.length == 0) {
 											//deleteCatalogContainer(containerCatalog);
@@ -374,7 +421,10 @@ class MainSettingTab extends PluginSettingTab {
 											value.itemChilds.push({
 												itemType: availableItemTypes[0],
 												itemName: newItemName,
-												itemChilds: [] 
+												itemChilds: [],
+												settingKeys: {
+													isCollapsedSettingWindow: true
+												}, 
 											});
 											plugin.saveSettings();
 
@@ -388,9 +438,9 @@ class MainSettingTab extends PluginSettingTab {
 		
 								// Обработка кнопки Add Child File
 								buttonAddChildFileEl.addEventListener('click', (event) => {
+									switchButtonCollapse(containerItemEl, value, true);
 									createGhostItem(containerItemEl, event.currentTarget, 'Name Child File').then(answer => {
 										if (answer.length == 0) {
-											console.log('Fail')
 											//deleteCatalogContainer(containerCatalog);
 											uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 										} else {
@@ -399,7 +449,10 @@ class MainSettingTab extends PluginSettingTab {
 											value.itemChilds.push({
 												itemType: availableItemTypes [1],
 												itemName: newItemName,
-												itemChilds: [] 
+												itemChilds: [],
+												settingKeys: {
+													isCollapsedSettingWindow: undefined
+												}, 
 											});
 											plugin.saveSettings();
 
@@ -444,6 +497,47 @@ class MainSettingTab extends PluginSettingTab {
 			
 			}
 
+		/**
+		 * Переключает состояние кнопки Button Collapse находящейся в родительском контейнере с помощью удаления или добавления ко всем дочерним элементам класса ac-hold и добавления класса ac-is-expanded к самой кнопке
+		 * @param parentEl - DOM родительского элемента в котором содержаться дочерние элементы которые необходимо скрыть или показать
+		 * @param catalogItem - элемент из каталога, в который стоит сохранить состояние контейнера
+		 * @param requiredСondition - (true|false|undefined) состояние, которое необходимо передать кнопке. Если undefined то функция изменит кнопку на противоположное от текущего состояние
+		 */
+		function switchButtonCollapse (parentEl: HTMLDivElement, catalogItem: { settingKeys: any; itemChilds?: any; itemType?: string; itemName?: string; }, requiredСondition: boolean | undefined = undefined) {
+			
+			
+			if (requiredСondition == true) {
+				catalogItem.settingKeys.isCollapsedSettingWindow = false
+			} else if (requiredСondition == false) {
+				catalogItem.settingKeys.isCollapsedSettingWindow = true
+			} else {
+				catalogItem.settingKeys.isCollapsedSettingWindow = !catalogItem.settingKeys.isCollapsedSettingWindow;
+			}
+			plugin.saveSettings();
+			let buttonEl;
+			for (let childItemEl of parentEl.childNodes) {
+				if (childItemEl.classList.contains('ac-setting-item-info')) {
+					buttonEl = childItemEl.querySelector('.ac-collapse-button')
+				}
+				if (childItemEl.classList.contains(cssClassContainerElement)) {
+					if (requiredСondition == true) {
+						childItemEl.classList.remove('ac-hold');
+					} else if (requiredСondition == false) {
+						childItemEl.classList.add('ac-hold');
+					} else {
+					childItemEl.classList.toggle('ac-hold');
+					}
+				}
+			}
+			if (requiredСondition == true) {
+				buttonEl.classList.add('ac-is-expanded');
+			} else if (requiredСondition == false) {
+				buttonEl.classList.remove('ac-is-expanded');
+			} else {
+			buttonEl.classList.toggle('ac-is-expanded');
+			}
+			
+		}
 
 		/**
 		 * Очищает DOM дерево созданное на основе Catalog
