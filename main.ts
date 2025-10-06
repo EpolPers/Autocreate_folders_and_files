@@ -161,7 +161,6 @@ class MainSettingTab extends PluginSettingTab {
 				.setTooltip('Add file')
 				.setIcon("file-plus")
 				.onClick(async () => {
-					console.log(catalogSettings.components);
 					if (settings.valueInput.length > 0) {
 						let newNameItem = findsUniqueName(catalog, settings.valueInput, availableItemTypes[1])
 						catalog.push({
@@ -205,6 +204,35 @@ class MainSettingTab extends PluginSettingTab {
 
 
 
+			function sortsItem (catalogArray: any[]) {
+				
+				catalogArray.sort((a, b) => {
+					if (a !== null && b !== null){	
+						if (a.itemChilds.length > 0) {
+							console.log(a)
+							sortsItem(a.itemChilds)
+						}
+
+						if (a.itemType !== b.itemType) {
+							return a.itemType.localeCompare(b.itemType)
+						}
+
+						// Если типы одинаковы — сортировка по имени
+						const nameA = a.itemName.toLowerCase();
+						const nameB = b.itemName.toLowerCase();
+						if (nameA < nameB) {
+							return -1;
+						} 
+						if (nameA > nameB) {
+							return 1;
+						} 
+						return 0;
+					}
+	
+				})
+				plugin.saveSettings();
+			}
+
 			/**
 			 * Обновляет список DOM элементов на основе глобального объекта настроек
 			 * @param indexCreateElement {number | undefinde} индекс элемента, который нужно добавить, если undefined, то обновляет весь список
@@ -221,14 +249,19 @@ class MainSettingTab extends PluginSettingTab {
 				
 				function deletesNullValue (currentCatalog: any[]){
 					currentCatalog.forEach((value, i) => {
+						console.log('Какие удалить из catalog', value)
 						if (value == null) {
-							currentCatalog.splice(i, 1)
+							if (currentCatalog.length > 1) {
+								currentCatalog.splice(i, 1)
+							}
+							else if (currentCatalog.length == 1) {
+								currentCatalog.splice(0)
+							}
 						} else if (value.itemChilds.length > 0) {
 							deletesNullValue(value.itemChilds);
-						}
-
-						
-				})
+						}	
+					})
+					plugin.saveSettings();
 				}
 
 				deletesNullValue(catalog);
@@ -392,10 +425,14 @@ class MainSettingTab extends PluginSettingTab {
 								delete catalogDir[i];
 								containerItemEl.remove();
 								plugin.saveSettings();
+								uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
 							};
 							
-							if (value.itemChilds.length > 0) {
 
+
+
+
+							if (value.itemChilds.length > 0) {
 								uploadCatalogContainer(undefined, value.itemChilds, containerItemEl, nestingLevel)
 							};
 
@@ -538,8 +575,7 @@ class MainSettingTab extends PluginSettingTab {
 
 				return await promise;
 		}
-
-
+			sortsItem(catalog);
 			uploadCatalogContainer(undefined, catalog, containerCatalog);
 
 
