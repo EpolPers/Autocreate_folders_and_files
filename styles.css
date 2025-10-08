@@ -11,7 +11,7 @@ If your plugin does not need CSS, delete this file.
     display: none !important;
 }
 
-.container-catalog {
+.container-catalog, .container-settings {
     border: 1px solid var(--background-modifier-border);
     border-radius: 5px;
     padding: 20px;
