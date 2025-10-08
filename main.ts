@@ -12,15 +12,23 @@ import { start } from 'repl';
 interface PluginSettings {
 	mySetting: string;
 	createdElementType: string;
-	valueInput: string;
 	catalogElements: any;
+
+	valueInput: string;
+	catalogNameInput: string;
+
+	catalogs: any;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
 	mySetting: 'default',
 	createdElementType: '',
-	valueInput: '',
 	catalogElements: [],
+
+	valueInput: '',
+	catalogNameInput: '',
+
+	catalogs: []
 }
 
 export default class Autocreate extends Plugin {
@@ -130,19 +138,168 @@ class MainSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
-		const plugin = this.plugin;
-		const settings = plugin.settings;
-		const catalog = settings.catalogElements;
 		
-		const availableItemTypes = ['folder', 'file'];
-		const cssClassContainerElement = 'catalog-item';
-				
+
+		const {containerEl} = this;
 		containerEl.empty();
 
-		const containerCatalog = containerEl.createEl('div', {
-			cls: 'container-catalog'
+		
+		const plugin = this.plugin;
+		const settings = plugin.settings;
+
+		const catalogs = settings.catalogs;
+
+		let inputCatalogNameEl: HTMLInputElement | null;
+		let submitCatalogNameEl: Element | null;
+
+		let navBar = new Setting(containerEl)
+		.setClass('ac-navigation-bar')  
+		.addButton(button => {
+			
+			button  
+			.setButtonText('Add catalog')
+			.setClass('ac-button')
+			.setIcon('circle-plus')  
+			.onClick(() => { 
+				inputCatalogNameEl?.classList.toggle('ac-hold');
+				submitCatalogNameEl?.classList.toggle('ac-hold');
+			})
+			.setTooltip  
 		})
+		.addText(input => {
+			input.inputEl.maxLength = 20;
+			
+			inputCatalogNameEl = input.inputEl;
+			
+			input.onChange(async (value) => {
+				settings.catalogNameInput = value;
+			})
+		})
+		.addExtraButton(submit => {
+
+			submitCatalogNameEl = submit.extraSettingsEl;
+
+			submit 
+			.setIcon('check')
+			.onClick(async () => {
+				
+				submitCatalogNameEl = navBar.controlEl.querySelector('div[class*="extra-setting-button"]');
+
+				inputCatalogNameEl?.classList.add('ac-hold');
+				navBar.controlEl.querySelector('div[class*="extra-setting-button"]')?.classList.add('ac-hold');
+
+				settings.catalogs.push({
+					name: settings.catalogNameInput,
+					items: []
+				});
+
+				createButton(navBar, settings.catalogNameInput);
+				await this.plugin.saveSettings();
+			})
+		
+			
+		
+		})// Кнопка ниже позже будет удалена
+		.addExtraButton(buttonCatalogsDelet => buttonCatalogsDelet
+			.setIcon('trash')
+			.onClick(async () => {
+				catalogs.forEach((el: any, i: any)=> {
+					catalogs.splice(i)
+				})
+				await this.plugin.saveSettings();
+			})
+		)
+		.addButton(button => button
+			.setButtonText('Main settings')
+			.setClass('ac-button')
+			.setIcon('settings')  
+			.onClick(() => { 
+				/* Здесь позже будет обработчик с открытием контейнера главных настроек */
+			})
+			.setTooltip  
+		)
+
+	inputCatalogNameEl?.classList.add('ac-hold');
+	submitCatalogNameEl?.classList.add('ac-hold');
+
+	uploadNavBar(catalogs)
+		
+
+	/**
+	 * Создает новую кнопку с пользовательским именем
+	 * @param instSetting - экземпляр объекта Setting Obsidian API
+	 * @param buttonName - Текст для новой кнопки
+	 */
+	function createButton (instSetting: Setting, buttonName: string) {
+		instSetting.addButton(button => {
+			button
+			.setButtonText(buttonName)
+			.setClass('ac-catalog-tab')
+			.onClick(()=> {
+				//Получаем все кнопки в navBar и удаляем у них акцентный css класс, а так же находим текущую кнопку с нужным индексом
+				
+				let indexCurrentCatalog;
+				let notCatalogTabCount = 0;
+				instSetting.components.forEach((component, i)=> {	
+					if (component.buttonEl !== undefined) {
+						if (component.buttonEl.isEqualNode(button.buttonEl)) {
+							
+							if (button.buttonEl.textContent == catalogs[i - notCatalogTabCount].name) {
+								indexCurrentCatalog = i - notCatalogTabCount	
+							} else {
+								console.log('Catalog index matching error!')
+							}	
+						}
+						if (component.buttonEl.classList.contains('ac-catalog-tab')) {
+							component.removeCta()
+						} else {
+							notCatalogTabCount++;
+						}
+					} else {
+						notCatalogTabCount++;
+					}	
+				})
+				button.setCta()
+
+				if (indexCurrentCatalog !== undefined) {
+					
+					console.log(catalogs[indexCurrentCatalog])
+					//uploadCatalogContainer(undefined, catalogs[indexCurrentCatalog].items, containerCatalog)
+				} else {
+					console.log('Catalog index matching error!')
+				}
+				
+			})
+		}) 
+				
+	}
+
+	/**
+	 * Загружает все вкладки в navBar на странице загрузок на основании массива данных
+	 * @param catalogList - массив объектов с данными каждого каталога
+	 */
+	function uploadNavBar (catalogList: any[]) {
+		catalogList.forEach((catalog)=> {
+			createButton (navBar, catalog.name);
+		})
+	}
+
+
+
+
+
+		
+		
+	const catalog = settings.catalogElements;
+	
+	const availableItemTypes = ['folder', 'file'];
+	const cssClassContainerElement = 'catalog-item';
+			
+	
+
+	const containerCatalog = containerEl.createEl('div', {
+		cls: 'container-catalog'
+	})
 
 			
 		const catalogSettings = new Setting(containerCatalog)
