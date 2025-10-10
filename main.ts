@@ -655,11 +655,18 @@ class MainSettingTab extends PluginSettingTab {
 									setIcon(containerItemTypeEl, 'file');
 								}
 								
-
+								// Создаем параграф с именем элемента
 								let containerItemNameEl = containerItemInfoEl.createEl('p',{
 									text: value.itemName,
 									cls: 'ac-item-name'
 								});
+
+								// Создаем иконку оповещения о возможности переименовывания элемента
+								let renameLabelEl = containerItemNameEl.createEl('label',{
+									cls: 'ac-rename-label'
+								});
+								setIcon(renameLabelEl, 'pen-line');
+
 
 								// Добавляем обработчик событий Rename Item
 								containerItemNameEl.addEventListener('click', (event) => {
