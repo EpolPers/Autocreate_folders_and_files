@@ -186,6 +186,12 @@ class MainSettingTab extends PluginSettingTab {
 
 		renderMainSettings(renderNavBar(plugin), buttonMainSettingsComp)
 
+		/**
+		 * Генерирует навигационное меню
+		 * @param plugin 
+		 * @returns 
+		 */
+
 		function renderNavBar (plugin: Autocreate) {
 
 			let compInputCatalogName;
@@ -440,8 +446,9 @@ class MainSettingTab extends PluginSettingTab {
 									isCollapsedSettingWindow: undefined
 								},
 								});
-								
-							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
+
+							sortsCatalog(catalog);
+							uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 							
 							await plugin.saveSettings();
 							}
@@ -467,7 +474,9 @@ class MainSettingTab extends PluginSettingTab {
 									isCollapsedSettingWindow: true
 								},
 							});
-							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
+							sortsCatalog(catalog);
+							uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
+							//uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
 							await plugin.saveSettings();
 							}
 						} catch (err) {
@@ -505,33 +514,52 @@ class MainSettingTab extends PluginSettingTab {
 				 * @param catalogArray массим объектов, который необходимо сортироваться
 				 */
 
-				function sortsItem (catalogArray: any[]) {
+				function sortsCatalog (catalogArray: any[]) {
 					
 					catalogArray.sort((a, b) => {
-						if (a !== null && b !== null){	
-							if (a.itemChilds.length > 0) {
-								console.log(a)
-								sortsItem(a.itemChilds)
-							}
-
-							if (a.itemType !== b.itemType) {
-								return a.itemType.localeCompare(b.itemType)
-							}
-
-							// Если типы одинаковы — сортировка по имени
-							const nameA = a.itemName.toLowerCase();
-							const nameB = b.itemName.toLowerCase();
-							if (nameA < nameB) {
-								return -1;
-							} 
-							if (nameA > nameB) {
-								return 1;
-							} 
-							return 0;
+						// Проверка на null
+						if (a === null || b === null) {
+							return a === null ? 1 : -1;
 						}
-		
+
+						// Сначала сортируем по типу (папки перед файлами)
+						if (a.itemType === 'folder' && b.itemType === 'file') {
+							return -1; // Папки выше
+						}
+						if (a.itemType === 'file' && b.itemType === 'folder') {
+							return 1; // Файлы ниже
+						}
+
+						// Если типы одинаковые, сортируем по имени
+						if (a.itemType === b.itemType) {
+							const lettersA = (a.itemName.match(/[a-zA-Z]+/) || [''])[0];
+							const lettersB = (b.itemName.match(/[a-zA-Z]+/) || [''])[0];
+							
+							const numA = parseInt((a.itemName.match(/\d+/) || ['0'])[0], 10);
+							const numB = parseInt((b.itemName.match(/\d+/) || ['0'])[0], 10);
+
+							// Сначала сравниваем буквенную часть
+							if (lettersA !== lettersB) {
+								return lettersA.localeCompare(lettersB);
+							}
+
+							// Затем сравниваем числовую часть
+							if (numA !== numB) {
+								return numA - numB;
+							}
+						}
+
+						return 0;
+							
 					})
-					plugin.saveSettings();
+					
+					catalogArray.forEach(item => {
+						if (item.itemChilds && item.itemChilds.length > 0) {
+							sortsCatalog(item.itemChilds);
+						}
+					});
+
+					//plugin.saveSettings();
 				}
 
 				/**
@@ -728,8 +756,7 @@ class MainSettingTab extends PluginSettingTab {
 													}, 
 												});
 												plugin.saveSettings();
-
-												//deleteCatalogContainer(containerCatalog);
+												sortsCatalog(catalog);
 												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											}								
 																				
@@ -742,7 +769,6 @@ class MainSettingTab extends PluginSettingTab {
 										switchButtonCollapse(containerItemEl, value, true);
 										createGhostItem(containerItemEl, event.currentTarget, 'Name Child File').then(answer => {
 											if (answer.length == 0) {
-												//deleteCatalogContainer(containerCatalog);
 												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											} else {
 												
@@ -756,8 +782,7 @@ class MainSettingTab extends PluginSettingTab {
 													}, 
 												});
 												plugin.saveSettings();
-
-												//deleteCatalogContainer(containerCatalog);
+												sortsCatalog(catalog);
 												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											}								
 																				
@@ -972,7 +997,7 @@ class MainSettingTab extends PluginSettingTab {
 
 					return await promise;
 			}
-				sortsItem(catalog);
+				sortsCatalog(catalog);
 				uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog);
 		}
 
