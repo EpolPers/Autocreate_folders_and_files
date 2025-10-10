@@ -150,10 +150,10 @@ class MainSettingTab extends PluginSettingTab {
 		const catalogs = settings.catalogs;
 
 		let compInputCatalogName;
-		let inputCatalogNameEl: HTMLTextAreaElement;
+		let inputCatalogNameEl: HTMLElement;
 		let compSubmitCatalogName: ExtraButtonComponent;
 		let submitCatalogNameEl: Element | null;
-		let hasCheckInput;
+		let hasCheckInput: any;
 
 		let navBar = new Setting(containerEl)
 		.setClass('ac-navigation-bar')  
@@ -211,8 +211,7 @@ class MainSettingTab extends PluginSettingTab {
 		
 			
 		
-		})// Кнопка ниже позже будет удалена
-		
+		})
 		.addButton(buttonMainSettings => buttonMainSettings
 			.setButtonText('Main settings')
 			.setClass('ac-button-main-settings')
@@ -240,13 +239,11 @@ class MainSettingTab extends PluginSettingTab {
 					.setButtonText('Delete all catalogs')
 					.setClass('ac-delete-button')
 					.onClick(async () => {
-						catalogs.forEach((el: any, i: any)=> {
-							catalogs.splice(i)
-						})
+						catalogs.splice(0)
 						uploadNavBar(catalogs)
 						await this.plugin.saveSettings();
-			})
-		)
+					})
+				)
 			})
 			.setTooltip  
 		)
@@ -298,10 +295,9 @@ class MainSettingTab extends PluginSettingTab {
 
 					if (indexCurrentCatalog !== undefined) {
 						
-
 						containerEl.querySelector('.container-catalog')?.remove()
 						containerEl.querySelector('.container-settings')?.remove()
-						createdCatalog(catalogs[indexCurrentCatalog].items, plugin)
+						createdCatalog(catalogs[indexCurrentCatalog].items, plugin, indexCurrentCatalog)
 
 						//let containerCatalog = 
 						
@@ -317,6 +313,8 @@ class MainSettingTab extends PluginSettingTab {
 			}) 
 					
 		}
+
+		
 
 		/**
 		 * Загружает все вкладки в navBar на странице загрузок на основании массива данных
@@ -343,11 +341,12 @@ class MainSettingTab extends PluginSettingTab {
 
 
 
+
 		
 		
 		//const catalog = settings.catalogElements;
 		
-		function createdCatalog (catalog: any[], plugin) {
+		function createdCatalog (catalog: any[], plugin: any, indexCatalog: number) {
 
 			const availableItemTypes = ['folder', 'file'];
 			const cssClassContainerElement = 'catalog-item';
@@ -356,6 +355,9 @@ class MainSettingTab extends PluginSettingTab {
 
 			const containerCatalog = containerEl.createEl('div', {
 				cls: 'container-catalog'
+			})
+			const containerCatalogSettings = containerCatalog.createEl('div', {
+				cls: 'container-catalog-sttings'
 			})
 
 				
@@ -387,7 +389,7 @@ class MainSettingTab extends PluginSettingTab {
 								},
 								});
 								
-							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog);
+							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
 							
 							await plugin.saveSettings();
 							}
@@ -413,7 +415,7 @@ class MainSettingTab extends PluginSettingTab {
 									isCollapsedSettingWindow: true
 								},
 							});
-							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog);
+							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
 
 					
 							
@@ -425,8 +427,17 @@ class MainSettingTab extends PluginSettingTab {
 					})
 				);
 				
-				
-
+				new Setting(containerCatalogSettings)
+					.setName('Delete this catalog')
+					.addButton(button=>button
+						.setButtonText('Delete this catalog')
+						.setClass('ac-delete-button')
+						.onClick(async () => {
+							catalogs.splice(indexCatalog)
+							uploadNavBar(catalogs)
+							await plugin.saveSettings();
+						})	
+					)
 
 
 
@@ -472,9 +483,10 @@ class MainSettingTab extends PluginSettingTab {
 				function uploadCatalogContainer (
 					indexCreateElement: number | undefined, 
 					catalogDir: { itemType: string; itemName: string; }[], 
-					parentContainer: HTMLElement, 
+					parentContainerEl: HTMLElement,
+					indexCatalog: number, 
 					nestingLevel = -1,
-					isDeleteCreatedItems: boolean = false,
+					isEnabledClearContainer: boolean = false,
 				){
 
 					console.log('Запуск создания каталога')
@@ -506,8 +518,8 @@ class MainSettingTab extends PluginSettingTab {
 
 					deletesNullValue(catalog);
 
-					if (isDeleteCreatedItems) {
-						deleteCatalogContainer(parentContainer);
+					if (isEnabledClearContainer) {
+						deleteCatalogContainer(parentContainerEl);
 					}
 
 					nestingLevel = nestingLevel + 1;
@@ -602,7 +614,7 @@ class MainSettingTab extends PluginSettingTab {
 										}										
 										plugin.saveSettings();
 										
-										uploadCatalogContainer(undefined, catalog, containerCatalog, -1, true);
+										uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 										
 									});
 
@@ -638,7 +650,7 @@ class MainSettingTab extends PluginSettingTab {
 										createGhostItem(containerItemEl, event.currentTarget, 'Name child folder').then(answer => {
 											if (answer.length == 0) {
 												//deleteCatalogContainer(containerCatalog);
-												uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
+												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											} else {
 												let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[0]);
 												value.itemChilds.push({
@@ -652,7 +664,7 @@ class MainSettingTab extends PluginSettingTab {
 												plugin.saveSettings();
 
 												//deleteCatalogContainer(containerCatalog);
-												uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
+												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											}								
 																				
 										});
@@ -665,7 +677,7 @@ class MainSettingTab extends PluginSettingTab {
 										createGhostItem(containerItemEl, event.currentTarget, 'Name Child File').then(answer => {
 											if (answer.length == 0) {
 												//deleteCatalogContainer(containerCatalog);
-												uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
+												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											} else {
 												
 												let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[1]);
@@ -680,7 +692,7 @@ class MainSettingTab extends PluginSettingTab {
 												plugin.saveSettings();
 
 												//deleteCatalogContainer(containerCatalog);
-												uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
+												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											}								
 																				
 										});
@@ -701,7 +713,7 @@ class MainSettingTab extends PluginSettingTab {
 									delete catalogDir[i];
 									containerItemEl.remove();
 									plugin.saveSettings();
-									uploadCatalogContainer(undefined, catalog, containerCatalog,-1, true);
+									uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 								};
 								
 
@@ -713,7 +725,7 @@ class MainSettingTab extends PluginSettingTab {
 								};
 
 								}
-								createContainer(parentContainer);
+								createContainer(parentContainerEl);
 						}
 					}
 					});
@@ -895,7 +907,7 @@ class MainSettingTab extends PluginSettingTab {
 					return await promise;
 			}
 				sortsItem(catalog);
-				uploadCatalogContainer(undefined, catalog, containerCatalog);
+				uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog);
 		}
 
 			
