@@ -4,7 +4,7 @@
  * Item - единичная структура каталога, которая создается на основании правил предопределенных пользователем.
  */
 
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component } from 'obsidian';
 import { start } from 'repl';
 
 // Remember to rename these classes and interfaces!
@@ -129,6 +129,39 @@ export default class Autocreate extends Plugin {
 	}
 }*/
 
+
+export class ModalSubmitDelete extends Modal {
+  constructor(app: App, textModal: string = '', onSubmit: (result: boolean) => void) {
+    super(app);
+	if (textModal.length == 0) {
+		this.setContent('Вы действительно хотите удалить этот элемент')
+	} else {
+		this.setContent(textModal)
+	}
+	
+	
+	new Setting(this.contentEl)
+        .addButton((btn) =>
+        btn
+			.setButtonText('Yes')
+			.setClass('ac-delete-button')
+			.onClick(() => {
+			this.close();
+			onSubmit(true);
+			})
+		)
+		.addButton((btn) =>
+		btn
+			.setButtonText('No')
+            .onClick(() => {
+            this.close();
+            onSubmit(false);
+          })
+		)
+  }
+}
+
+
 class MainSettingTab extends PluginSettingTab {
 	plugin: Autocreate;
 	
@@ -143,197 +176,213 @@ class MainSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 		containerEl.empty();
 
-		
+		const app = this.app;
 		const plugin = this.plugin;
 		const settings = plugin.settings;
 
 		const catalogs = settings.catalogs;
 
-		let compInputCatalogName;
-		let inputCatalogNameEl: HTMLElement;
-		let compSubmitCatalogName: ExtraButtonComponent;
-		let submitCatalogNameEl: Element | null;
-		let hasCheckInput: any;
+		let buttonMainSettingsComp: ButtonComponent;
 
-		let navBar = new Setting(containerEl)
-		.setClass('ac-navigation-bar')  
-		.addButton(button => {
+		renderMainSettings(renderNavBar(plugin), buttonMainSettingsComp)
+
+		function renderNavBar (plugin: Autocreate) {
+
+			let compInputCatalogName;
+			let inputCatalogNameEl: HTMLElement;
+			let compSubmitCatalogName: ExtraButtonComponent;
+			let submitCatalogNameEl: Element | null;
 			
-			button  
-			.setButtonText('Add catalog')
-			.setClass('ac-button')
-			.setIcon('circle-plus')  
-			.onClick(() => { 
-				inputCatalogNameEl?.classList.toggle('ac-hold');
-				submitCatalogNameEl?.classList.toggle('ac-hold');
-			})
-			.setTooltip  
-		})
-		.addText(input => {
-			
-			input.inputEl.maxLength = 20;
-			
-			inputCatalogNameEl = input.inputEl;
+			let hasCheckInput: any;
 
-			
-			
-			input.onChange(async (value) => {
-
-				hasCheckInput = catalogs.some((catalog: { name: string; })=> {
-					return catalog.name === value
-				})
-				settings.catalogNameInput = value;
-			})
-		})
-		.addExtraButton(submit => {
-			compSubmitCatalogName = submit;
-			submitCatalogNameEl = submit.extraSettingsEl;
-
-			submit 
-			.setIcon('check')
-			.onClick(async () => {
-				if (hasCheckInput) {
-					new Notice('A directory with this name already exists, please enter a different name.');
-				} else {
-					inputCatalogNameEl?.classList.add('ac-hold');
-					submitCatalogNameEl?.classList.add('ac-hold');
-
-					settings.catalogs.push({
-						name: settings.catalogNameInput,
-						items: []
-					});
-
-					createButton(navBar, settings.catalogNameInput);
-					await this.plugin.saveSettings();
-				}
+			let navBar = new Setting(containerEl)
+			.setClass('ac-navigation-bar')  
+			.addButton(buttonAddCatalogComp => {
 				
+				buttonAddCatalogComp  
+				.setButtonText('Add catalog')
+				.setClass('ac-button')
+				.setIcon('circle-plus')  
+				.onClick(() => { 
+					inputCatalogNameEl?.classList.toggle('ac-hold');
+					submitCatalogNameEl?.classList.toggle('ac-hold');
+				})
+				.setTooltip  
 			})
-		
-			
-		
-		})
-		.addButton(buttonMainSettings => buttonMainSettings
-			.setButtonText('Main settings')
-			.setClass('ac-button-main-settings')
-			.setIcon('settings')  
-			.onClick(() => { 
-				containerEl.querySelector('.container-settings')?.remove();
-				containerEl.querySelector('.container-catalog')?.remove();
-				navBar.components.forEach((component, i)=> {
-					if (component.buttonEl !== undefined) {
-						component.removeCta()
+			.addText(input => {
+				
+				input.inputEl.maxLength = 20;
+				
+				inputCatalogNameEl = input.inputEl;
+
+				
+				
+				input.onChange(async (value) => {
+
+					hasCheckInput = catalogs.some((catalog: { name: string; })=> {
+						return catalog.name === value
+					})
+					settings.catalogNameInput = value;
+				})
+			})
+			.addExtraButton(submit => {
+				compSubmitCatalogName = submit;
+				submitCatalogNameEl = submit.extraSettingsEl;
+
+				submit 
+				.setIcon('check')
+				.onClick(async () => {
+
+
+					if (hasCheckInput) {
+						new Notice('A directory with this name already exists, please enter a different name.');
+					} else {
+						inputCatalogNameEl?.classList.add('ac-hold');
+						submitCatalogNameEl?.classList.add('ac-hold');
+
+						settings.catalogs.push({
+							name: settings.catalogNameInput,
+							items: []
+						});
+
+						createButton(navBar, settings.catalogNameInput, buttonMainSettingsComp);
+						await plugin.saveSettings();
 					}
 					
 				})
-				buttonMainSettings.setCta()
-
-
-				const containerMainSettings = containerEl.createEl('div', {
-					cls: 'container-settings'
-				})
-
-				let settingDeleteCatalogs = new Setting (containerMainSettings)
-				.setName('Delete all created catalogs')
-				.setDesc('Caution! This function will completely delete all created directories without the possibility of restoring them.')
-				.addButton(buttonCatalogsDelet => buttonCatalogsDelet
-					.setButtonText('Delete all catalogs')
-					.setClass('ac-delete-button')
-					.onClick(async () => {
-						catalogs.splice(0)
-						uploadNavBar(catalogs)
-						await this.plugin.saveSettings();
-					})
-				)
-			})
-			.setTooltip  
-		)
-
-		inputCatalogNameEl?.classList.add('ac-hold');
-		submitCatalogNameEl?.classList.add('ac-hold');
-
-		uploadNavBar(catalogs)
 			
+				
+			
+			})
+			.addButton(buttonMainSettings => {
+			
+			buttonMainSettingsComp = buttonMainSettings;
+				
+			buttonMainSettings
+				.setButtonText('Main settings')
+				.setClass('ac-button-main-settings')
+				.setIcon('settings')  
+				.onClick(() => { 
+					renderMainSettings(navBar, buttonMainSettings);
+				})
+				.setTooltip  
+			})
+
+			inputCatalogNameEl?.classList.add('ac-hold');
+			submitCatalogNameEl?.classList.add('ac-hold');
+
+			renderCatalogTabs(catalogs, navBar, buttonMainSettingsComp);
+
+			return navBar;
+		}
+
+		
+
+		/**
+		 * Очищает акцент у всех компонентов экземпляра являющихся кнопками 
+		 * @param components массив с компонентами экземпляра предоставляемый Obsidian API
+		 */
+
+		function clearAllCta (components: any[]) {
+			components.forEach((component, i)=> {
+				if (component.buttonEl !== undefined) {
+					component.removeCta()
+				 }
+			})
+		}
+
+
+
+
+
 
 		/**
 		 * Создает новую кнопку с пользовательским именем
 		 * @param instSetting - экземпляр объекта Setting Obsidian API
 		 * @param buttonName - Текст для новой кнопки
 		 */
-		function createButton (instSetting: Setting, buttonName: string,) {
-			instSetting.addButton(button => {
-				button
-				.setButtonText(buttonName)
-				.setClass('ac-catalog-tab')
-				.onClick(()=> {
-					//Получаем все кнопки в navBar и удаляем у них акцентный css класс, а так же находим текущую кнопку с нужным индексом
-					
-					let indexCurrentCatalog;
-					let notCatalogTabCount = 0;
-					instSetting.components.forEach((component, i)=> {	
-						if (component.buttonEl !== undefined) {
-							if (component.buttonEl.isEqualNode(button.buttonEl)) {
-								
-								if (button.buttonEl.textContent == catalogs[i - notCatalogTabCount].name) {
-									indexCurrentCatalog = i - notCatalogTabCount	
-								} else {
-									console.log('Catalog index matching error!')
-								}	
-							}
-							if (component.buttonEl.classList.contains('ac-catalog-tab')) {
-								component.removeCta()
-							} else {
-								if (component.buttonEl.classList.contains('ac-button-main-settings')) {
-									component.removeCta()
-								}
-								notCatalogTabCount++;
-							}
-						} else {
-							notCatalogTabCount++;
-						}	
-					})
-					button.setCta()
+		function createButton (instSetting: Setting, buttonName: string, buttonMainSettingsComp: ButtonComponent) {
+			try {
+				instSetting.addButton(tab => {
+					tab
+					.setButtonText(buttonName)
+					.setClass('ac-catalog-tab')
+					.onClick(()=> {
 
-					if (indexCurrentCatalog !== undefined) {
-						
+						let indexTab = catalogs.findIndex((element: { name: string; }) => element.name === tab.buttonEl.textContent)						
+						clearAllCta(instSetting.components);
+						tab.setCta();
 						containerEl.querySelector('.container-catalog')?.remove()
 						containerEl.querySelector('.container-settings')?.remove()
-						createdCatalog(catalogs[indexCurrentCatalog].items, plugin, indexCurrentCatalog)
-
-						//let containerCatalog = 
+						renderCatalog(catalogs[indexTab].items, plugin, indexTab, instSetting, buttonMainSettingsComp);
 						
-						//containerEl.removeChild(containerCatalog)
-
-						console.log(catalogs[indexCurrentCatalog].items)
-						//uploadCatalogContainer(undefined, catalogs[indexCurrentCatalog].items, containerCatalog)
-					} else {
-						console.log('Catalog index matching error!')
-					}
-					
+					})
 				})
-			}) 
+			} catch (err) {
+				console.log(createButton.name, err)
+			}
 					
 		}
 
-		
+
+		/**
+		 * Создает контейнер с главными настройками плагина
+		 * @param instSetting - экземпляр объекта navBar Setting Obsidian API
+		 */
+		function renderMainSettings (instSetting: Setting, buttonMainSettingsComp: ButtonComponent) {
+			containerEl.querySelector('.container-settings')?.remove();
+			containerEl.querySelector('.container-catalog')?.remove();
+			instSetting.components.forEach((component, i)=> {
+				if (component.buttonEl !== undefined) {
+					component.removeCta()
+				}
+				
+			})
+			buttonMainSettingsComp.setCta()
+
+
+			const containerMainSettings = containerEl.createEl('div', {
+				cls: 'container-settings'
+			})
+
+			let settingDeleteCatalogs = new Setting (containerMainSettings)
+			.setName('Delete all created catalogs')
+			.setDesc('Caution! This function will completely delete all created directories without the possibility of restoring them.')
+			.addButton(buttonCatalogsDelet => buttonCatalogsDelet
+				.setButtonText('Delete all catalogs')
+				.setClass('ac-delete-button')
+				.onClick(async () => {
+					new ModalSubmitDelete(app, 'Вы действительно хотите удалить все элементы', (results)=> {
+						if (results) {
+							catalogs.splice(0)
+							renderCatalogTabs(catalogs, instSetting, buttonMainSettingsComp)
+						}
+					}).open();
+					await plugin.saveSettings();
+				})
+			)
+		}
 
 		/**
 		 * Загружает все вкладки в navBar на странице загрузок на основании массива данных
-		 * @param catalogList - массив объектов с данными каждого каталога
+		 * @param catalogData - массив объектов с данными каждого каталога
+		 * @param instSetting - экземпляр объекта navBar Setting Obsidian API
 		 */
-		function uploadNavBar (catalogList: any[]) {
-
-			navBar.components.forEach ((component)=> {
+		function renderCatalogTabs (catalogData: any[], instSetting: Setting, buttonMainSettingsComp: ButtonComponent) {
+			instSetting.components.forEach ((component, i, components)=> {
 				if (component.buttonEl !== undefined) {
 					if (component.buttonEl.classList.contains('ac-catalog-tab')) {
-					component.buttonEl.remove()
-				}
+					//component.buttonEl.remove()
+					instSetting.components.splice(i,1)
+					
+					}
 				}
 				
 			})
 
 			// Для каждого каталога вызывает функцию по созданию вкладки
-			catalogList.forEach((catalog)=> {
-				createButton (navBar, catalog.name);
+			catalogData.forEach((catalog)=> {
+				createButton (instSetting, catalog.name, buttonMainSettingsComp);
 			})
 		}
 
@@ -344,15 +393,18 @@ class MainSettingTab extends PluginSettingTab {
 
 		
 		
-		//const catalog = settings.catalogElements;
+		/**
+		 * Создает элементы каталога
+		 * @param catalog 
+		 * @param plugin 
+		 * @param indexCatalog 
+		 */
 		
-		function createdCatalog (catalog: any[], plugin: any, indexCatalog: number) {
+		function renderCatalog (catalog: any[], plugin: any, indexCatalog: number, instSetting: Setting, buttonMainSettingsComp: ButtonComponent) {
 
 			const availableItemTypes = ['folder', 'file'];
 			const cssClassContainerElement = 'catalog-item';
 				
-		
-
 			const containerCatalog = containerEl.createEl('div', {
 				cls: 'container-catalog'
 			})
@@ -416,9 +468,6 @@ class MainSettingTab extends PluginSettingTab {
 								},
 							});
 							uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
-
-					
-							
 							await plugin.saveSettings();
 							}
 						} catch (err) {
@@ -427,14 +476,24 @@ class MainSettingTab extends PluginSettingTab {
 					})
 				);
 				
+
+				// Контейнер настройки определенного каталога
 				new Setting(containerCatalogSettings)
 					.setName('Delete this catalog')
 					.addButton(button=>button
-						.setButtonText('Delete this catalog')
+						.setButtonText('Delete')
 						.setClass('ac-delete-button')
 						.onClick(async () => {
-							catalogs.splice(indexCatalog)
-							uploadNavBar(catalogs)
+							
+							new ModalSubmitDelete(app, 'Вы действительно хотите удалить этот элемент', (results)=> {
+								if (results) {
+									catalogs.splice(indexCatalog,1);
+									instSetting.clear();
+									containerEl.querySelector('.ac-navigation-bar')?.remove();
+									renderNavBar(plugin);
+									renderMainSettings(instSetting, buttonMainSettingsComp);
+								}
+							}).open();
 							await plugin.saveSettings();
 						})	
 					)
