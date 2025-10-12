@@ -238,8 +238,6 @@ class MainSettingTab extends PluginSettingTab {
 				submit 
 				.setIcon('check')
 				.onClick(async () => {
-
-
 					if (hasCheckInput) {
 						new Notice('A directory with this name already exists, please enter a different name.');
 					} else {
@@ -250,15 +248,10 @@ class MainSettingTab extends PluginSettingTab {
 							name: settings.catalogNameInput,
 							items: []
 						});
-
 						createButton(navBar, settings.catalogNameInput, buttonMainSettingsComp);
 						await plugin.saveSettings();
 					}
-					
 				})
-			
-				
-			
 			})
 			.addButton(buttonMainSettings => {
 			
@@ -400,7 +393,7 @@ class MainSettingTab extends PluginSettingTab {
 		
 		
 		/**
-		 * Создает элементы каталога
+		 * Renders the catalog items
 		 * @param catalog 
 		 * @param plugin 
 		 * @param indexCatalog 
@@ -509,58 +502,7 @@ class MainSettingTab extends PluginSettingTab {
 
 
 
-				/**
-				 * Функция сортирующая все элементы массива объектов в catalog по itemName и itemType, в том числе все вложенные массивы объектов в текущий массив объеквтов
-				 * @param catalogArray массим объектов, который необходимо сортироваться
-				 */
-
-				function sortsCatalog (catalogArray: any[]) {
-					
-					catalogArray.sort((a, b) => {
-						// Проверка на null
-						if (a === null || b === null) {
-							return a === null ? 1 : -1;
-						}
-
-						// Сначала сортируем по типу (папки перед файлами)
-						if (a.itemType === 'folder' && b.itemType === 'file') {
-							return -1; // Папки выше
-						}
-						if (a.itemType === 'file' && b.itemType === 'folder') {
-							return 1; // Файлы ниже
-						}
-
-						// Если типы одинаковые, сортируем по имени
-						if (a.itemType === b.itemType) {
-							const lettersA = (a.itemName.match(/[a-zA-Z]+/) || [''])[0];
-							const lettersB = (b.itemName.match(/[a-zA-Z]+/) || [''])[0];
-							
-							const numA = parseInt((a.itemName.match(/\d+/) || ['0'])[0], 10);
-							const numB = parseInt((b.itemName.match(/\d+/) || ['0'])[0], 10);
-
-							// Сначала сравниваем буквенную часть
-							if (lettersA !== lettersB) {
-								return lettersA.localeCompare(lettersB);
-							}
-
-							// Затем сравниваем числовую часть
-							if (numA !== numB) {
-								return numA - numB;
-							}
-						}
-
-						return 0;
-							
-					})
-					
-					catalogArray.forEach(item => {
-						if (item.itemChilds && item.itemChilds.length > 0) {
-							sortsCatalog(item.itemChilds);
-						}
-					});
-
-					//plugin.saveSettings();
-				}
+				
 
 				/**
 				 * Обновляет список DOM элементов на основе глобального объекта настроек
@@ -576,34 +518,65 @@ class MainSettingTab extends PluginSettingTab {
 					isEnabledClearContainer: boolean = false,
 				){
 
-					console.log('Запуск создания каталога')
+					console.log('Так выглядит каталог перед его рендерингом', catalogDir)
 					
 					/**
-					 * Удаляет все значения null в catalog
+					 * Deleted null value from catalog
 					 * @param currentCatalog 
 					 */
 
-					function deletesNullValue (currentCatalog: any[]){
-						try {
-						currentCatalog.forEach((value, i) => {
-							if (value == null) {
-								if (currentCatalog.length > 1) {
-									currentCatalog.splice(i, 1)
+					function clearsCatalogNull (currentCatalog: Array<{itemName: string, itemType: string, itemChilds: []  }>){
+						
+						 try {
+							// Check if the input parameter is an array
+							if (!Array.isArray(currentCatalog)) {
+								throw new Error('The input parameter must be an array');
+							}
+
+							// Use a reverse loop for safe element removal
+							for (let i = currentCatalog.length - 1; i >= 0; i--) {
+								const item = currentCatalog[i];
+
+								// Check the current item
+								if (item === null || item === undefined) {
+									currentCatalog.splice(i, 1);
+								} else {
+									// Check for the presence and correctness of nested elements
+									if (item.hasOwnProperty('itemChilds') && 
+										Array.isArray(item.itemChilds)) {
+										clearsCatalogNull(item.itemChilds);
+									}
 								}
-								else if (currentCatalog.length == 1) {
-									currentCatalog.splice(0)
-								}
-							} else if (value.itemChilds.length > 0) {
-								deletesNullValue(value.itemChilds);
-							}	
-						})
-						plugin.saveSettings();
+							}
 						} catch (err) {
-							console.log(deletesNullValue.name, err)
+							console.error(`Error in ${clearsCatalogNull.name}:`, err.message);
 						}
+						
+						/*try {					
+							let i = 0; 
+							let catalogLength = currentCatalog.length;	
+							while (currentCatalog[i] !== undefined) {
+								if (currentCatalog[i] == null) {
+									currentCatalog.splice(i, 1)
+									catalogLength - 1;
+								} else {
+
+									if (currentCatalog[i].hasOwnProperty('itemChilds')) {
+										console.log('Проверка', currentCatalog[i]);
+										
+										clearsCatalogNull(currentCatalog[i].itemChilds);
+									}
+									console.log('Индекс',i);
+									i++
+								}
+							}
+						} catch (err) {
+							console.log(clearsCatalogNull.name, err)
+						}*/
 					}
 
-					deletesNullValue(catalog);
+					clearsCatalogNull(catalogDir);					
+					sortsCatalog(catalogDir);
 
 					if (isEnabledClearContainer) {
 						deleteCatalogContainer(parentContainerEl);
@@ -920,6 +893,59 @@ class MainSettingTab extends PluginSettingTab {
 			}
 
 			/**
+			 * Функция сортирующая все элементы массива объектов в catalog по itemName и itemType, в том числе все вложенные массивы объектов в текущий массив объеквтов
+			 * @param catalogArray массим объектов, который необходимо сортироваться
+			 */
+
+			function sortsCatalog (catalogArray: any[]) {
+				
+				catalogArray.sort((a, b) => {
+					// Проверка на null
+					if (a === null || b === null) {
+						return a === null ? 1 : -1;
+					}
+
+					// Сначала сортируем по типу (папки перед файлами)
+					if (a.itemType === 'folder' && b.itemType === 'file') {
+						return -1; // Папки выше
+					}
+					if (a.itemType === 'file' && b.itemType === 'folder') {
+						return 1; // Файлы ниже
+					}
+
+					// Если типы одинаковые, сортируем по имени
+					if (a.itemType === b.itemType) {
+						const lettersA = (a.itemName.match(/[a-zA-Z]+/) || [''])[0];
+						const lettersB = (b.itemName.match(/[a-zA-Z]+/) || [''])[0];
+						
+						const numA = parseInt((a.itemName.match(/\d+/) || ['0'])[0], 10);
+						const numB = parseInt((b.itemName.match(/\d+/) || ['0'])[0], 10);
+
+						// Сначала сравниваем буквенную часть
+						if (lettersA !== lettersB) {
+							return lettersA.localeCompare(lettersB);
+						}
+
+						// Затем сравниваем числовую часть
+						if (numA !== numB) {
+							return numA - numB;
+						}
+					}
+
+					return 0;
+						
+				})
+				
+				catalogArray.forEach(item => {
+					if (item.itemChilds && item.itemChilds.length > 0) {
+						sortsCatalog(item.itemChilds);
+					}
+				});
+
+				//plugin.saveSettings();
+			}
+
+			/**
 			 * Создает призрачный контейнер будующего Item с полями для ввода данных
 			 * @param containerParentItemEl
 			 * @param textPlaceholder  
@@ -997,7 +1023,7 @@ class MainSettingTab extends PluginSettingTab {
 
 					return await promise;
 			}
-				sortsCatalog(catalog);
+				
 				uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog);
 		}
 
