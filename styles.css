@@ -32,7 +32,7 @@ If your plugin does not need CSS, delete this file.
 .ac-item-container:hover {
     color: var(--nav-item-color-hover);
     border-color: var(--interactive-accent);
-    /*background-color: var(--nav-item-background-hover);*/
+   
 }
 
 .ac-setting-item-info, .ac-setting-item-control {
@@ -40,6 +40,9 @@ If your plugin does not need CSS, delete this file.
 }
 
 .ac-setting-item-info {
+    display: inline-block;
+    padding-top: 5px;
+    position: relative;
     width: 75%;
 }
 
@@ -47,13 +50,17 @@ If your plugin does not need CSS, delete this file.
     width: 25%;
 }
 
+.ac-setting-item-control button {
+    opacity: 0;
 
-
-.ac-setting-item-info {
-    display: inline-block;
-    padding-top: 5px;
-    position: relative;
+    pointer-events: none;
 }
+
+.ac-item-container:hover .ac-setting-item-control:hover button, .ac-item-container:hover:has(> .ac-setting-item-info:hover) > .ac-setting-item-control button{
+    opacity: 1;
+    pointer-events: auto;
+}
+
 
 
 .ac-ghost-item-container {
