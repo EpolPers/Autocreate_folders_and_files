@@ -28,6 +28,7 @@ If your plugin does not need CSS, delete this file.
     transition: background-color 0.2s;
 }
 
+
 .ac-item-container:hover {
     color: var(--nav-item-color-hover);
     border-color: var(--interactive-accent);
@@ -35,9 +36,18 @@ If your plugin does not need CSS, delete this file.
 }
 
 .ac-setting-item-info, .ac-setting-item-control {
-    width: 50%;
     float: left;
 }
+
+.ac-setting-item-info {
+    width: 75%;
+}
+
+.ac-setting-item-control {
+    width: 25%;
+}
+
+
 
 .ac-setting-item-info {
     display: inline-block;
@@ -149,10 +159,11 @@ If your plugin does not need CSS, delete this file.
     vertical-align: middle;
 }
 
-.ac-item-container:hover .ac-rename-label {
+.ac-item-container:hover .ac-setting-item-info:hover .ac-rename-label, .ac-item-container:hover:has(> .ac-setting-item-control:hover) > .ac-setting-item-info .ac-rename-label {
     opacity: 1;
     transition: 0.2s;
 }
+
 
 .ac-item-name:hover svg {
     color: var(--text-muted);

@@ -526,7 +526,6 @@ class MainSettingTab extends PluginSettingTab {
 					 */
 
 					function clearsCatalogNull (currentCatalog: Array<{itemName: string, itemType: string, itemChilds: []  }>){
-						
 						 try {
 							// Check if the input parameter is an array
 							if (!Array.isArray(currentCatalog)) {
@@ -551,28 +550,6 @@ class MainSettingTab extends PluginSettingTab {
 						} catch (err) {
 							console.error(`Error in ${clearsCatalogNull.name}:`, err.message);
 						}
-						
-						/*try {					
-							let i = 0; 
-							let catalogLength = currentCatalog.length;	
-							while (currentCatalog[i] !== undefined) {
-								if (currentCatalog[i] == null) {
-									currentCatalog.splice(i, 1)
-									catalogLength - 1;
-								} else {
-
-									if (currentCatalog[i].hasOwnProperty('itemChilds')) {
-										console.log('Проверка', currentCatalog[i]);
-										
-										clearsCatalogNull(currentCatalog[i].itemChilds);
-									}
-									console.log('Индекс',i);
-									i++
-								}
-							}
-						} catch (err) {
-							console.log(clearsCatalogNull.name, err)
-						}*/
 					}
 
 					clearsCatalogNull(catalogDir);					
