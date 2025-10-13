@@ -469,11 +469,15 @@ class MainSettingTab extends PluginSettingTab {
 				.onClick(async () => {
 					new ModalSubmitDelete(app, 'Вы действительно хотите удалить все элементы', (results)=> {
 						if (results) {
-							catalogs.splice(0)
-							renderCatalogTabs(catalogs, instSetting, buttonMainSettingsComp)
+							catalogs.splice(0);
+							plugin.saveSettings();
+							instSetting.clear();
+							containerEl.querySelector('.ac-navigation-bar')?.remove();
+							renderMainSettings(renderNavBar(plugin), buttonMainSettingsComp);
+							//renderCatalogTabs(catalogs, instSetting, buttonMainSettingsComp);
 						}
 					}).open();
-					await plugin.saveSettings();
+					
 				})
 			)
 		}
@@ -608,13 +612,13 @@ class MainSettingTab extends PluginSettingTab {
 							new ModalSubmitDelete(app, 'Вы действительно хотите удалить этот элемент', (results)=> {
 								if (results) {
 									catalogs.splice(indexCatalog,1);
+									plugin.saveSettings();
 									instSetting.clear();
 									containerEl.querySelector('.ac-navigation-bar')?.remove();
 									renderNavBar(plugin);
 									renderMainSettings(instSetting, buttonMainSettingsComp);
 								}
 							}).open();
-							await plugin.saveSettings();
 						})	
 					)
 
