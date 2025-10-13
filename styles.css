@@ -34,6 +34,8 @@ If your plugin does not need CSS, delete this file.
 }
 
 
+
+
 .ac-item-container:hover {
     color: var(--nav-item-color-hover);
     border-color: var(--interactive-accent);
@@ -139,6 +141,7 @@ If your plugin does not need CSS, delete this file.
 .ac-collapse-button {
     position: absolute;
     margin-inline-start: calc(-1* var(--size-4-5));
+    left: 0;
     color: var(--nav-collapse-icon-color);
     background-color: rgba(0, 0, 0, 0) !important;
     box-shadow: none !important;
