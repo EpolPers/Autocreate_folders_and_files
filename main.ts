@@ -4,7 +4,8 @@
  * Item - единичная структура каталога, которая создается на основании правил предопределенных пользователем.
  */
 
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component } from 'obsidian';
+import { log } from 'console';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component, setTooltip, displayTooltip } from 'obsidian';
 import { start } from 'repl';
 
 // Remember to rename these classes and interfaces!
@@ -130,6 +131,8 @@ export default class Autocreate extends Plugin {
 }*/
 
 
+
+
 export class ModalSubmitDelete extends Modal {
   constructor(app: App, textModal: string = '', onSubmit: (result: boolean) => void) {
     super(app);
@@ -172,6 +175,7 @@ class MainSettingTab extends PluginSettingTab {
 
 	display(): void {
 		
+		
 
 		const {containerEl} = this;
 		containerEl.empty();
@@ -198,8 +202,6 @@ class MainSettingTab extends PluginSettingTab {
 			let inputCatalogNameEl: HTMLElement;
 			let compSubmitCatalogName: ExtraButtonComponent;
 			let submitCatalogNameEl: Element | null;
-			
-			let hasCheckInput: any;
 
 			let navBar = new Setting(containerEl)
 			.setClass('ac-navigation-bar')  
@@ -217,17 +219,13 @@ class MainSettingTab extends PluginSettingTab {
 			})
 			.addText(input => {
 				
+				
 				input.inputEl.maxLength = 20;
 				
-				inputCatalogNameEl = input.inputEl;
-
-				
+				inputCatalogNameEl = input.inputEl;				
 				
 				input.onChange(async (value) => {
 
-					hasCheckInput = catalogs.some((catalog: { name: string; })=> {
-						return catalog.name === value
-					})
 					settings.catalogNameInput = value;
 				})
 			})
@@ -238,18 +236,18 @@ class MainSettingTab extends PluginSettingTab {
 				submit 
 				.setIcon('check')
 				.onClick(async () => {
-					if (hasCheckInput) {
-						new Notice('A directory with this name already exists, please enter a different name.');
-					} else {
+				if (handlesInvalidInput(inputCatalogNameEl, settings.catalogNameInput, catalogs)) {
+				} else {
 						inputCatalogNameEl?.classList.add('ac-hold');
 						submitCatalogNameEl?.classList.add('ac-hold');
-
 						settings.catalogs.push({
-							name: settings.catalogNameInput,
+							name: settings.catalogNameInput.trim(),
 							items: []
 						});
 						createButton(navBar, settings.catalogNameInput, buttonMainSettingsComp);
+						settings.catalogNameInput = '';
 						await plugin.saveSettings();
+						
 					}
 				})
 			})
@@ -275,6 +273,124 @@ class MainSettingTab extends PluginSettingTab {
 			return navBar;
 		}
 
+		/**
+		 * Processes an incorrect input
+		 * @param inputEl - The field above which the notification should be displayed
+		 * @param checkValue - The value that needs to be checked
+		 * @param catalogs - An array of objects with all values
+		 * @param type?: string - Type for new item (Optional) 
+		 * @returns boolean
+		 */
+		function handlesInvalidInput (inputEl: HTMLElement, checkValue: string, catalogs: any[], type: string | undefined = undefined) {
+			
+			if (!checksValueInput(checkValue, catalogs, 'Duplicates', type).value.result) {
+				displayTooltip(inputEl, 'Such a name already exists', {
+					placement: 'bottom',
+					classes: ['ac-invalid-tooltip']
+				} )	
+				return true					
+			} else if (checkValue.trim().length === 0) {
+				displayTooltip(inputEl, 'The input cannot be empty', {
+					placement: 'bottom',
+					classes: ['ac-invalid-tooltip']
+				} )
+				return true	
+			} else if (!checksValueInput(checkValue, catalogs, 'Symbols').value.result){
+				displayTooltip(inputEl, 'For the name, you can not use a space at the beginning and end, as well as characters: .[]#^*<>:?/|\\ in any part of the name.', {
+					placement: 'bottom',
+					classes: ['ac-invalid-tooltip']
+				} )
+				return true	
+			} else {
+				false
+			}
+		}
+
+		/**
+		 * Checks the value for validity
+		 * @param value: string
+		 * @param catalogs: [] - an array of objects with all values 
+		 * @param typeChecked 
+		 * @param type?: string - Type for new item (Optional)
+		 */
+		function checksValueInput (value: string, catalogs: any[], typeChecked: 'Symbols'| 'Duplicates', type: string | undefined = undefined) {
+			let checkResult = {};
+
+			if (typeChecked === 'Symbols') {
+				checkResult = checksSymbols(value);
+			}
+
+			if (typeChecked === 'Duplicates') {
+				checkResult = checksDuplicates(value, catalogs, type);
+			}
+
+			return checkResult;
+
+			/**
+			 * Checks the value for valid symbols
+			 * @param value - the value being checked
+			 * @returns { checkName: string, value: {result: boolean, message: string }
+			}
+			 */
+			function checksSymbols (value: string) {
+				const regexInput = /^([^\.\[\]\#\^\|\/\*\<\>\:\?\s"]{1}[^\[\]\#\^\|\/\*\<\>\:\?\\"]{0,253}[^\.\[\]\#\^\|\/\*\<\>\:\?\s"\\]{1})$|^[^\.\[\]\#\^\|\/\*\<\>\:\?\s"\\]{1}$/
+				if (!regexInput.test(value)) {
+					return {
+						checkName: checksSymbols.name,
+						value: {
+							result: false,
+							//message: 'For the name, you can not use a space at the beginning and end, as well as characters: .[]#^*<>:?/|\\ in any part of the name.'
+						}
+					}
+				} else {
+					return {
+						checkName: checksSymbols.name,
+						value: {
+							result: true,
+							//message: 'Verification is successful'
+						}
+					}
+				}
+			}
+
+			/**
+			 * Checks the value for duplicates
+			 * @param value - the value being checked
+			 * @param catalogs - an array of objects with all values 
+			 * @param type?: string - Type for new item (Optional)
+			 */
+			function checksDuplicates (value: string, catalogs: any[], type: string | undefined) {
+				let result;
+				if (catalogs !== undefined) {					
+					result = catalogs.some((catalog: any)=> {
+						if (catalog.hasOwnProperty('name')) {
+							return catalog.name === value;
+						} else if (catalog.hasOwnProperty('itemName')) {
+							return catalog.itemName === value && catalog.itemType === type;
+						}		
+					})
+				} else {
+					result = false;
+				}	
+				if (result) {
+					return {
+						checkName: checksDuplicates.name,
+						value: {
+							result: false,
+							//message: 'Such a name already exists'
+						}
+					}
+				} else {
+					return {
+						checkName: checksDuplicates.name,
+						value: {
+							result: true,
+							//message: 'Verification is successful'
+						}
+					}
+				}	
+			}
+		}
 		
 
 		/**
@@ -411,29 +527,32 @@ class MainSettingTab extends PluginSettingTab {
 				cls: 'container-catalog-sttings'
 			})
 
-				
+			let inputItemNameEl: HTMLInputElement;
 			const catalogSettings = new Setting(containerCatalog)
 				.setName('Create a root directory item')
 				.setDesc('Create a template for files and folders that can be added from the context menu of the file manager.')
-				.addText(elementNameInput => elementNameInput
-					.setPlaceholder('Name file or folder')
+				.addText(elementNameInput => {
+					
+					inputItemNameEl = elementNameInput.inputEl;
+
+					elementNameInput.setPlaceholder('Name file or folder')
 					//.setValue(this.plugin.settings.catalog)
 					.onChange(async (value) => {
 						settings.valueInput = value;
 					})
 					.setValue(settings.valueInput)
-				)
+				})
 				.addButton(button => button
 					.setButtonText("Add file")
 					.setTooltip('Add file')
 					.setIcon("file-plus")
-					.onClick(async () => {
-						try {
-							if (settings.valueInput.length > 0) {
-								let newNameItem = findsUniqueName(catalog, settings.valueInput, availableItemTypes[1])
+					.onClick(async () => {												
+							if (handlesInvalidInput(inputItemNameEl, settings.valueInput, catalog, availableItemTypes[1])) {
+								
+							} else {
 								catalog.push({
 								itemType: availableItemTypes[1],
-								itemName: newNameItem,
+								itemName: settings.valueInput,
 								itemChilds: [],
 								settingKeys: {
 									isCollapsedSettingWindow: undefined
@@ -445,9 +564,7 @@ class MainSettingTab extends PluginSettingTab {
 							
 							await plugin.saveSettings();
 							}
-						} catch (err) {
-							console.log('An error occurred when creating the root file!', err)
-						}
+						
 					})
 				)
 				.addButton(button => button
@@ -456,12 +573,13 @@ class MainSettingTab extends PluginSettingTab {
 					.setIcon("folder-plus")
 					.onClick(async () => {
 						try {
-						
-							if (settings.valueInput.length > 0) {
-								let newNameItem = findsUniqueName(catalog, settings.valueInput, availableItemTypes[0])
+							if (handlesInvalidInput(inputItemNameEl, settings.valueInput, catalog, availableItemTypes[0])){
+
+							} 
+							else {
 								catalog.push({
 								itemType: availableItemTypes[0],
-								itemName: newNameItem,
+								itemName: settings.valueInput,
 								itemChilds: [],
 								settingKeys: {
 									isCollapsedSettingWindow: true
@@ -518,7 +636,6 @@ class MainSettingTab extends PluginSettingTab {
 					isEnabledClearContainer: boolean = false,
 				){
 
-					console.log('Так выглядит каталог перед его рендерингом', catalogDir)
 					
 					/**
 					 * Deleted null value from catalog
@@ -564,7 +681,6 @@ class MainSettingTab extends PluginSettingTab {
 					catalogDir.forEach((value: {
 						settingKeys: any;
 						itemChilds: any; itemType: string; itemName: string; }, i: number, array) => {
-							console.log('Зашли в цикл')
 							if (value !== null){
 						
 							if (i == indexCreateElement || indexCreateElement == undefined) {
@@ -577,7 +693,6 @@ class MainSettingTab extends PluginSettingTab {
 								let containerItemEl = parentContainer.createEl('div', {
 									cls: cssClassContainerElement  
 								});
-								console.log('Создали родительский контейнер каталога')
 								containerItemEl.classList.add('ac-item-container');
 								if (value.settingKeys.isCollapsedSettingWindow == true) {
 									containerItemEl.setAttribute('collapsed', 'true')
@@ -651,7 +766,7 @@ class MainSettingTab extends PluginSettingTab {
 									
 									containerItemNameEl.classList.add('ac-hold');
 
-									createGhostItem(containerItemInfoEl, event.currentTarget, value.itemName).then(answer => {
+									createGhostItem(containerItemInfoEl, event.currentTarget, value.itemName, catalogDir).then(answer => {
 										if (answer.length != 0 && value.itemName !== answer) {
 											let newItemName = findsUniqueName(array, answer, value.itemType);
 											value.itemName = newItemName;
@@ -691,15 +806,15 @@ class MainSettingTab extends PluginSettingTab {
 
 									buttonAddChildFolderEl.addEventListener('click', (event) => {
 										switchButtonCollapse(containerItemEl, value, true);
-										createGhostItem(containerItemEl, event.currentTarget, 'Name child folder').then(answer => {
-											if (answer.length == 0) {
+										createGhostItem(containerItemEl, event.currentTarget, availableItemTypes[0], value.itemChilds).then(answer => {									
+											if (answer == '') {
 												//deleteCatalogContainer(containerCatalog);
 												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											} else {
-												let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[0]);
+												//let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[0]);
 												value.itemChilds.push({
 													itemType: availableItemTypes[0],
-													itemName: newItemName,
+													itemName: answer,
 													itemChilds: [],
 													settingKeys: {
 														isCollapsedSettingWindow: true
@@ -717,15 +832,15 @@ class MainSettingTab extends PluginSettingTab {
 									// Обработка кнопки Add Child File
 									buttonAddChildFileEl.addEventListener('click', (event) => {
 										switchButtonCollapse(containerItemEl, value, true);
-										createGhostItem(containerItemEl, event.currentTarget, 'Name Child File').then(answer => {
-											if (answer.length == 0) {
+										createGhostItem(containerItemEl, event.currentTarget, availableItemTypes[1], value.itemChilds).then(answer => {
+											if (answer == '') {
 												uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
 											} else {
 												
-												let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[1]);
+												//let newItemName = findsUniqueName(value.itemChilds, answer, availableItemTypes[1]);
 												value.itemChilds.push({
 													itemType: availableItemTypes [1],
-													itemName: newItemName,
+													itemName: answer,
 													itemChilds: [],
 													settingKeys: {
 														isCollapsedSettingWindow: undefined
@@ -822,7 +937,6 @@ class MainSettingTab extends PluginSettingTab {
 			 * @param deletableCatalogContainerEl: HTMLDivElement - DOM элемент содержащий все ноды каталога, которые нужно удалить 
 			 */
 			function deleteCatalogContainer (deletableCatalogContainerEl: HTMLElement){
-				console.log('Вызвана функция удаления контейнера каталога'); //🗑️
 				deletableCatalogContainerEl.querySelectorAll('.' + cssClassContainerElement).forEach((item)=>{
 					item.remove();
 				})
@@ -925,11 +1039,11 @@ class MainSettingTab extends PluginSettingTab {
 			/**
 			 * Создает призрачный контейнер будующего Item с полями для ввода данных
 			 * @param containerParentItemEl
-			 * @param textPlaceholder  
+			 * @param typeNewItem  
 			 * @returns promise
 			 */
 
-			async function createGhostItem(containerParentItemEl: HTMLDivElement, eventObject: EventTarget | null | undefined, textPlaceholder: string) {
+			async function createGhostItem(containerParentItemEl: HTMLDivElement, eventObject: EventTarget | null | undefined, typeNewItem: string, currentCatalog: any[]) {
 				
 					let inputGhostItemValue = '';
 					let resolvePromise: (value: string) => void; // Хранит ссылку на функцию resolve
@@ -953,12 +1067,12 @@ class MainSettingTab extends PluginSettingTab {
 					let inputFormGhostItemEl = formGhostItemEl.createEl('input', {
 						type: 'text',
 						attr: {
-							pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]|[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}',
+							//pattern: '[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\"]{0,253}[^\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\s\\\\"]|[^\\.\\[\\]\\#\\^\\|\\/\\*\\<\\>\\:\\?\\\\\\s"]{1}',
 							required: 'true'
 						},
 						cls: 'ac-input-ghost-item'
 					});
-					inputFormGhostItemEl.placeholder = textPlaceholder;
+					inputFormGhostItemEl.placeholder = `Name of the new ${typeNewItem}`;
 					inputFormGhostItemEl.focus();
 
 					let buttonSubmitFormGhostItemEl = formGhostItemEl.createEl('button', {
@@ -974,8 +1088,27 @@ class MainSettingTab extends PluginSettingTab {
 					 */
 					function handleFormSubmit (event: { preventDefault: () => void; }) {
 						event.preventDefault();
-						inputGhostItemValue = inputFormGhostItemEl.value;
-						resolvePromise(inputGhostItemValue);
+						
+						if (handlesInvalidInput(inputFormGhostItemEl, inputFormGhostItemEl.value, currentCatalog, typeNewItem)) {
+							inputFormGhostItemEl.focus();
+						} else {
+							resolvePromise(inputFormGhostItemEl.value);
+						}
+
+						/*const regexInput = /^([^\.\[\]\#\^\|\/\*\<\>\:\?\s"]{1}[^\[\]\#\^\|\/\*\<\>\:\?\\"]{0,253}[^\.\[\]\#\^\|\/\*\<\>\:\?\s"\\]{1})$|^[^\.\[\]\#\^\|\/\*\<\>\:\?\s"\\]{1}$/
+						if (regexInput.test(inputFormGhostItemEl.value)) {
+							console.log(regexInput.test(inputFormGhostItemEl.value));
+							inputGhostItemValue = inputFormGhostItemEl.value;
+							
+						} else {
+							displayTooltip(inputFormGhostItemEl, 'For the name, you can not use a space at the beginning and end, as well as characters: .[]#^*<>:?/|\\ in any part of the name.', {
+							placement: 'bottom',
+							classes: ['ac-invalid-tooltip']
+						})
+						
+						}*/
+						
+						
 					}
 
 					formGhostItemEl.addEventListener('submit', handleFormSubmit);

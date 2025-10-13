@@ -9,6 +9,11 @@ If your plugin does not need CSS, delete this file.
 
 .ac-hold {
     display: none !important;
+    
+}
+
+.ac-hide {
+    display: none !important;
 }
 
 .container-catalog, .container-settings {
@@ -134,7 +139,6 @@ If your plugin does not need CSS, delete this file.
 .ac-collapse-button {
     position: absolute;
     margin-inline-start: calc(-1* var(--size-4-5));
-    margin-bottom: ;
     color: var(--nav-collapse-icon-color);
     background-color: rgba(0, 0, 0, 0) !important;
     box-shadow: none !important;
@@ -182,3 +186,6 @@ If your plugin does not need CSS, delete this file.
     color: var(--text-faint);
 }
 
+.ac-invalid-tooltip {
+    background-color: var(--background-modifier-error-hover);
+}
