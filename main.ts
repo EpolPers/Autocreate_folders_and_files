@@ -5,7 +5,7 @@
  */
 
 import { log } from 'console';
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component, setTooltip, displayTooltip } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component, setTooltip, displayTooltip, TextComponent } from 'obsidian';
 import { start } from 'repl';
 
 // Remember to rename these classes and interfaces!
@@ -198,11 +198,12 @@ class MainSettingTab extends PluginSettingTab {
 
 		function renderNavBar (plugin: Autocreate) {
 
-			let compInputCatalogName;
+			let inputCatalogNameComp;
 			let inputCatalogNameEl: HTMLElement;
 			let compSubmitCatalogName: ExtraButtonComponent;
 			let submitCatalogNameEl: Element | null;
 
+			let inputCatalogNameValue: string = '';
 			let navBar = new Setting(containerEl)
 			.setClass('ac-navigation-bar')  
 			.addButton(buttonAddCatalogComp => {
@@ -222,11 +223,12 @@ class MainSettingTab extends PluginSettingTab {
 				
 				input.inputEl.maxLength = 20;
 				
+				inputCatalogNameComp = input;
 				inputCatalogNameEl = input.inputEl;				
 				
 				input.onChange(async (value) => {
 
-					settings.catalogNameInput = value;
+					inputCatalogNameValue = value;
 				})
 			})
 			.addExtraButton(submit => {
@@ -236,16 +238,16 @@ class MainSettingTab extends PluginSettingTab {
 				submit 
 				.setIcon('check')
 				.onClick(async () => {
-				if (handlesInvalidInput(inputCatalogNameEl, settings.catalogNameInput, catalogs)) {
+				if (handlesInvalidInput(inputCatalogNameEl, inputCatalogNameValue, catalogs)) {
 				} else {
 						inputCatalogNameEl?.classList.add('ac-hold');
 						submitCatalogNameEl?.classList.add('ac-hold');
 						settings.catalogs.push({
-							name: settings.catalogNameInput.trim(),
+							name: inputCatalogNameValue.trim(),
 							items: []
 						});
-						createButton(navBar, settings.catalogNameInput, buttonMainSettingsComp);
-						settings.catalogNameInput = '';
+						createButton(navBar, inputCatalogNameValue, buttonMainSettingsComp);
+						inputCatalogNameComp.setValue('')
 						await plugin.saveSettings();
 						
 					}
@@ -532,31 +534,37 @@ class MainSettingTab extends PluginSettingTab {
 			})
 
 			let inputItemNameEl: HTMLInputElement;
+			let inputItemNameComp: TextComponent;
+			let inputItemNameValue: string = '';
+
+
 			const catalogSettings = new Setting(containerCatalog)
 				.setName('Create a root directory item')
 				.setDesc('Create a template for files and folders that can be added from the context menu of the file manager.')
 				.addText(elementNameInput => {
 					
+					inputItemNameComp = elementNameInput;
 					inputItemNameEl = elementNameInput.inputEl;
+
 
 					elementNameInput.setPlaceholder('Name file or folder')
 					//.setValue(this.plugin.settings.catalog)
 					.onChange(async (value) => {
-						settings.valueInput = value;
+						inputItemNameValue = value;
 					})
-					.setValue(settings.valueInput)
+					//.setValue(settings.valueInput)
 				})
 				.addButton(button => button
 					.setButtonText("Add file")
 					.setTooltip('Add file')
 					.setIcon("file-plus")
 					.onClick(async () => {												
-							if (handlesInvalidInput(inputItemNameEl, settings.valueInput, catalog, availableItemTypes[1])) {
+							if (handlesInvalidInput(inputItemNameEl, inputItemNameValue, catalog, availableItemTypes[1])) {
 								
 							} else {
 								catalog.push({
 								itemType: availableItemTypes[1],
-								itemName: settings.valueInput,
+								itemName: inputItemNameValue,
 								itemChilds: [],
 								settingKeys: {
 									isCollapsedSettingWindow: undefined
@@ -565,7 +573,7 @@ class MainSettingTab extends PluginSettingTab {
 
 							sortsCatalog(catalog);
 							uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
-							
+							inputItemNameComp.setValue('');
 							await plugin.saveSettings();
 							}
 						
@@ -577,13 +585,13 @@ class MainSettingTab extends PluginSettingTab {
 					.setIcon("folder-plus")
 					.onClick(async () => {
 						try {
-							if (handlesInvalidInput(inputItemNameEl, settings.valueInput, catalog, availableItemTypes[0])){
+							if (handlesInvalidInput(inputItemNameEl, inputItemNameValue, catalog, availableItemTypes[0])){
 
 							} 
 							else {
 								catalog.push({
 								itemType: availableItemTypes[0],
-								itemName: settings.valueInput,
+								itemName: inputItemNameValue,
 								itemChilds: [],
 								settingKeys: {
 									isCollapsedSettingWindow: true
@@ -591,7 +599,7 @@ class MainSettingTab extends PluginSettingTab {
 							});
 							sortsCatalog(catalog);
 							uploadCatalogContainer(undefined, catalog, containerCatalog, indexCatalog, -1, true);
-							//uploadCatalogContainer(catalog.length - 1, catalog, containerCatalog, indexCatalog);
+							inputItemNameComp.setValue('');
 							await plugin.saveSettings();
 							}
 						} catch (err) {
