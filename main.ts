@@ -806,7 +806,7 @@ class MainSettingTab extends PluginSettingTab {
 
 							
 								}
-
+								
 								
 								// Создаем контэйнер с типом элемента
 								let containerItemTypeEl = containerItemInfoEl.createEl('div', {
