@@ -5,7 +5,9 @@
  */
 
 import { log } from 'console';
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component, setTooltip, displayTooltip, TextComponent } from 'obsidian';
+import { create } from 'domain';
+import { mkdir } from 'fs';
+import { App, Editor, Vault, MarkdownView, Modal, Notice, Plugin, setIcon, PluginSettingTab, Setting, ExtraButtonComponent, ButtonComponent, Component, setTooltip, displayTooltip, TextComponent, normalizePath } from 'obsidian';
 import { start } from 'repl';
 
 // Remember to rename these classes and interfaces!
@@ -32,18 +34,78 @@ const DEFAULT_SETTINGS: PluginSettings = {
 	catalogs: []
 }
 
+
+
 export default class Autocreate extends Plugin {
 	settings: PluginSettings;
+		
 
 	async onload() {
+
 		await this.loadSettings();
+		const vault = this.app.vault;
+		const catalog = this.settings.catalogs[0]
+		const catalogs = this.settings.catalogs;
 
+
+		console.log(catalogs);
+		//registerFileMenu(this, catalogs);
+		
 		// This creates an icon in the left ribbon.
-		/*const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (_evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});*/
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Autocreate', (_evt: MouseEvent) => {
+			createdCatalogOnVault(catalog);			
+		});
 
+		//function registerFileMenu (this, catalogs) {
+			this.registerEvent(
+				this.app.workspace.on('file-menu', (menu, file) => {
+				catalogs.forEach(catalog => {			
+					menu.addItem((item) => {
+						item
+						.setSection('action-primary')
+						.setTitle(`Создать каталог ${catalog.name}`)
+						.setIcon('chart-bar-increasing')
+						.onClick(async () => {
+							if (catalog.items.length > 0) {
+								createdCatalogOnVault(catalog, file.path)
+							} else {
+								new Notice(`В каталоге ${catalog.name} нет элементов`)
+							}
+							
+						});
+					})
+
+
+				})
+				
+				})
+			);
+		//}
+
+	
+		function createdCatalogOnVault (catalog: any, path) {
+			console.log(catalog)
+			if (catalog.hasOwnProperty('items')) {
+				catalog = catalog.items
+			}
+
+			catalog.forEach((item: { itemType: string; itemName: string; }) => {
+				let deepPath;
+				if (item.itemType == 'file') {
+					vault.create(`${path}/${item.itemName}.md`, '')
+				} else if (item.itemType == 'folder') {
+					deepPath = `${path}/${item.itemName}`
+					vault.createFolder(deepPath)
+				}
+
+				if (item.itemChilds.length > 0 && item.itemChilds !== undefined) {
+					console.log('Ребенок', item.itemChilds);
+					
+					createdCatalogOnVault(item.itemChilds, `${deepPath}/`)
+				}
+			});
+			
+		}
 		// Perform additional things with the ribbon
 		//ribbonIconEl.addClass('my-plugin-ribbon-class');
 
@@ -1154,3 +1216,12 @@ class MainSettingTab extends PluginSettingTab {
 
 	
 }
+
+/**
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
