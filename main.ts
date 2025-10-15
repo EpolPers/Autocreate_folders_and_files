@@ -48,7 +48,6 @@ export default class Autocreate extends Plugin {
 		const catalogs = this.settings.catalogs;
 
 
-		console.log(catalogs);
 		//registerFileMenu(this, catalogs);
 		
 		// This creates an icon in the left ribbon.
@@ -84,7 +83,6 @@ export default class Autocreate extends Plugin {
 
 	
 		function createdCatalogOnVault (catalog: any, path) {
-			console.log(catalog)
 			if (catalog.hasOwnProperty('items')) {
 				catalog = catalog.items
 			}
@@ -99,7 +97,6 @@ export default class Autocreate extends Plugin {
 				}
 
 				if (item.itemChilds.length > 0 && item.itemChilds !== undefined) {
-					console.log('Ребенок', item.itemChilds);
 					
 					createdCatalogOnVault(item.itemChilds, `${deepPath}/`)
 				}
@@ -155,12 +152,12 @@ export default class Autocreate extends Plugin {
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
+		/*this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
 			console.log('click', evt);
-		});
+		});*/
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		//this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
@@ -840,10 +837,10 @@ class MainSettingTab extends PluginSettingTab {
 									
 									containerItemNameEl.classList.add('ac-hold');
 
-									createGhostItem(containerItemInfoEl, event.currentTarget, value.itemName, catalogDir).then(answer => {
+									createGhostItem(containerItemInfoEl, event.currentTarget, value.itemType, catalogDir).then(answer => {
 										if (answer.length != 0 && value.itemName !== answer) {
-											let newItemName = findsUniqueName(array, answer, value.itemType);
-											value.itemName = newItemName;
+											//let newItemName = findsUniqueName(array, answer, value.itemType);
+											value.itemName = answer;
 										}										
 										plugin.saveSettings();
 										
@@ -1197,7 +1194,6 @@ class MainSettingTab extends PluginSettingTab {
 
 					document.addEventListener('click', (event)=> {
 						if (containerGhostItemEl.offsetParent !== null && !containerGhostItemEl.contains(event.target as HTMLElement) && event.target !== eventObject) {
-							console.log(event.target)
 							removeGhsotItem();
 						}
 					})
